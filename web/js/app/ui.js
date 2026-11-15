@@ -136,8 +136,7 @@
 			$('#view-' + v).classList.toggle('hidden', v !== name);
 		});
 		$$('.topnav a').forEach(function (a) { a.classList.toggle('active', a.dataset.view === name); });
-		$('#mini-preview-toggle').classList.toggle('hidden', name !== 'editor');
-		if (name !== 'editor') $('#mini-preview').classList.add('hidden');
+		document.body.dataset.view = name;
 		if (name === 'gallery') renderGallery();
 		if (name === 'print') renderPrintList();
 		window.scrollTo(0, 0);
@@ -183,7 +182,8 @@
 
 	function afterDraw() {
 		if (rotation) paintRotatedPreview();
-		if (!$('#mini-preview').classList.contains('hidden')) paintMiniPreview();
+		syncSliders();
+		updateTextOutline();
 		scheduleAutosave();
 	}
 
@@ -312,7 +312,9 @@
 	};
 
 	/* ------------------------------------------------------------------
-	 * Art: drag, pinch-zoom and trackpad zoom on the preview
+	 * Dragging on the card: art, selected text, set symbol or watermark.
+	 * One finger / mouse: move. Pinch, Shift + drag or Ctrl + wheel: resize.
+	 * Ctrl + drag rotates the art.
 	 * ------------------------------------------------------------------ */
 	function cardPerScreenPixel() {
 		var rect = previewCanvas.getBoundingClientRect();
@@ -343,31 +345,110 @@
 		}
 		return [cu * cardCanvas.width - card.marginX * card.width, cv * cardCanvas.height - card.marginY * card.height];
 	}
-	function readArt() {
-		return {
-			x: parseFloat($('#art-x').value) || 0, y: parseFloat($('#art-y').value) || 0,
-			zoom: parseFloat($('#art-zoom').value) || 100, rotate: parseFloat($('#art-rotate').value) || 0
-		};
+	function num(id, fallback) { var v = parseFloat($('#' + id).value); return isFinite(v) ? v : fallback; }
+	function setNum(id, v, digits) { var m = Math.pow(10, digits || 0); $('#' + id).value = Math.round(v * m) / m; }
+	function selectedText() {
+		var keys = Object.keys((card && card.text) || {});
+		if (!keys.length) return null;
+		return card.text[keys[Math.min(selectedTextIndex, keys.length - 1)]];
 	}
-	function writeArt(a) {
-		$('#art-x').value = Math.round(a.x);
-		$('#art-y').value = Math.round(a.y);
-		$('#art-zoom').value = Math.round(a.zoom * 10) / 10;
-		$('#art-rotate').value = Math.round(a.rotate * 10) / 10;
-		artEdited();
+	// Redraw the text right away (dragging), never more than one pass at a time.
+	var textDrawBusy = false, textDrawAgain = false;
+	function drawTextSoon() {
+		if (textDrawBusy) { textDrawAgain = true; return; }
+		textDrawBusy = true;
+		clearTimeout(writingText);
+		Promise.resolve().then(drawText).catch(function () {}).then(function () {
+			textDrawBusy = false;
+			if (textDrawAgain) { textDrawAgain = false; drawTextSoon(); }
+		});
 	}
-	function zoomArtAround(start, factor, point) {
-		var z = Math.max(0.5, start.zoom * factor);
-		var f = z / start.zoom;
-		writeArt({ x: point[0] - (point[0] - start.x) * f, y: point[1] - (point[1] - start.y) * f, zoom: z, rotate: start.rotate });
+	var dragTargets = {
+		art: {
+			hint: 'Drag the card to move the art. Pinch, or Shift + drag, to resize. Ctrl + drag rotates.',
+			read: function () { return { x: num('art-x', 0), y: num('art-y', 0), zoom: num('art-zoom', 100), rotate: num('art-rotate', 0) }; },
+			write: function (a) {
+				setNum('art-x', a.x); setNum('art-y', a.y); setNum('art-zoom', Math.max(0.5, a.zoom), 1); setNum('art-rotate', a.rotate, 1);
+				artEdited();
+			},
+			rotates: true
+		},
+		symbol: {
+			hint: 'Drag the card to move the set symbol. Pinch, or Shift + drag, to resize.',
+			read: function () { return { x: num('setSymbol-x', 0), y: num('setSymbol-y', 0), zoom: num('setSymbol-zoom', 100) }; },
+			write: function (a) { setNum('setSymbol-x', a.x); setNum('setSymbol-y', a.y); setNum('setSymbol-zoom', Math.max(1, a.zoom), 1); setSymbolEdited(); }
+		},
+		watermark: {
+			hint: 'Drag the card to move the watermark. Pinch, or Shift + drag, to resize.',
+			read: function () { return { x: num('watermark-x', 0), y: num('watermark-y', 0), zoom: num('watermark-zoom', 100) }; },
+			write: function (a) { setNum('watermark-x', a.x); setNum('watermark-y', a.y); setNum('watermark-zoom', Math.max(1, a.zoom), 1); watermarkEdited(); }
+		},
+		text: {
+			hint: 'Tap a text on the card to select it, drag to move it. Pinch, or Shift + drag, to change its size.',
+			read: function () {
+				var t = selectedText();
+				if (!t) return null;
+				var base = (t.size || 0.038) * card.height;
+				return { x: (t.x || 0) * card.width, y: (t.y || 0) * card.height, base: base, px: base + (parseFloat(t.fontSize) || 0) };
+			},
+			write: function (a) {
+				var t = selectedText();
+				if (!t) return;
+				t.x = a.x / card.width;
+				t.y = a.y / card.height;
+				t.fontSize = Math.round(Math.max(4, a.px) - a.base);
+				$('#text-editor-font-size').value = t.fontSize;
+				fillTextBounds();
+				drawTextSoon();
+				updateTextOutline();
+			}
+		}
+	};
+	var dragTarget = 'art';
+	window.setDragTarget = function (name) {
+		if (!dragTargets[name]) return;
+		dragTarget = name;
+		$$('.drag-target button').forEach(function (b) { b.classList.toggle('active', b.dataset.target === name); });
+		$('#drag-hint').textContent = dragTargets[name].hint;
+		updateTextOutline();
+	};
+	function resizeTarget(target, start, factor, point) {
+		if (target === dragTargets.text) {
+			target.write({ x: start.x, y: start.y, base: start.base, px: start.px * factor });
+			return;
+		}
+		var z = Math.max(0.5, start.zoom * factor), f = z / start.zoom;
+		var next = Object.assign({}, start, { x: point[0] - (point[0] - start.x) * f, y: point[1] - (point[1] - start.y) * f, zoom: z });
+		target.write(next);
 	}
-	function initArtGestures() {
+	function textBoxContains(t, pt) {
+		var x = (t.x || 0) * card.width, y = (t.y || 0) * card.height;
+		var w = (t.width || 1) * card.width, h = (t.height || 1) * card.height;
+		return pt[0] >= x && pt[0] <= x + w && pt[1] >= y && pt[1] <= y + h ? w * h : 0;
+	}
+	// Text box under a card point, as an index into card.text: the selected one
+	// if it is there, otherwise the smallest box containing the point.
+	function textIndexAt(pt) {
+		var keys = Object.keys(card.text || {});
+		var current = selectedText();
+		if (current && textBoxContains(current, pt)) return selectedTextIndex;
+		var best = -1, bestArea = Infinity;
+		keys.forEach(function (k, i) {
+			var area = textBoxContains(card.text[k], pt);
+			if (area && area < bestArea) { best = i; bestArea = area; }
+		});
+		return best;
+	}
+	function initCardGestures() {
 		previewCanvas.onmousedown = previewCanvas.onmousemove = previewCanvas.onmouseout = previewCanvas.onmouseup = null;
 		var pointers = new Map();
 		var gesture = null;
 		function begin() {
 			var pts = Array.from(pointers.values());
-			gesture = { art: readArt(), pts: pts.map(function (p) { return { x: p.x, y: p.y }; }) };
+			var target = dragTargets[dragTarget];
+			var start = target.read();
+			if (!start) { gesture = null; return; }
+			gesture = { target: target, start: start, pts: pts.map(function (p) { return { x: p.x, y: p.y }; }) };
 			if (pts.length >= 2) {
 				gesture.dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1;
 				gesture.mid = [(pts[0].x + pts[1].x) / 2, (pts[0].y + pts[1].y) / 2];
@@ -378,6 +459,11 @@
 			e.preventDefault();
 			try { previewCanvas.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
 			pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+			if (dragTarget === 'text' && pointers.size === 1) {
+				var idx = textIndexAt(screenPointToCard(e.clientX, e.clientY));
+				var option = idx >= 0 && $('#text-options').children[idx];
+				if (option && idx !== selectedTextIndex) option.click();
+			}
 			begin();
 		});
 		var frameQueued = false, lastMove = null;
@@ -390,22 +476,23 @@
 			requestAnimationFrame(function () {
 				frameQueued = false;
 				if (!gesture) return;
+				var target = gesture.target, start = gesture.start;
 				var pts = Array.from(pointers.values());
 				if (pts.length >= 2 && gesture.dist) {
 					var dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
 					var mid = [(pts[0].x + pts[1].x) / 2, (pts[0].y + pts[1].y) / 2];
 					var d = screenDeltaToCard(mid[0] - gesture.mid[0], mid[1] - gesture.mid[1]);
-					var start = { x: gesture.art.x + d[0], y: gesture.art.y + d[1], zoom: gesture.art.zoom, rotate: gesture.art.rotate };
-					zoomArtAround(start, dist / gesture.dist, screenPointToCard(mid[0], mid[1]));
+					var moved = Object.assign({}, start, { x: start.x + d[0], y: start.y + d[1] });
+					resizeTarget(target, moved, dist / gesture.dist, screenPointToCard(mid[0], mid[1]));
 				} else if (pts.length === 1) {
 					var p = pts[0], s = gesture.pts[0];
 					if (lastMove.shift) {
-						writeArt({ x: gesture.art.x, y: gesture.art.y, zoom: gesture.art.zoom * Math.pow(1.002, s.y - p.y), rotate: gesture.art.rotate });
-					} else if (lastMove.ctrl) {
-						writeArt({ x: gesture.art.x, y: gesture.art.y, zoom: gesture.art.zoom, rotate: (gesture.art.rotate - (s.y - p.y) / 10) % 360 });
+						resizeTarget(target, start, Math.pow(1.002, s.y - p.y), screenPointToCard(s.x, s.y));
+					} else if (lastMove.ctrl && target.rotates) {
+						target.write(Object.assign({}, start, { rotate: (start.rotate - (s.y - p.y) / 10) % 360 }));
 					} else {
 						var dd = screenDeltaToCard(p.x - s.x, p.y - s.y);
-						writeArt({ x: gesture.art.x + dd[0], y: gesture.art.y + dd[1], zoom: gesture.art.zoom, rotate: gesture.art.rotate });
+						target.write(Object.assign({}, start, { x: start.x + dd[0], y: start.y + dd[1] }));
 					}
 				}
 			});
@@ -420,16 +507,193 @@
 		previewCanvas.addEventListener('wheel', function (e) {
 			if (!e.ctrlKey && !e.altKey) return; // trackpad pinch sends ctrl+wheel
 			e.preventDefault();
-			zoomArtAround(readArt(), Math.pow(0.998, e.deltaY), screenPointToCard(e.clientX, e.clientY));
+			var target = dragTargets[dragTarget], start = target.read();
+			if (start) resizeTarget(target, start, Math.pow(0.998, e.deltaY), screenPointToCard(e.clientX, e.clientY));
 		}, { passive: false });
 	}
+
+	/* ------------------------------------------------------------------
+	 * Selected text: position / size fields and outline on the card
+	 * ------------------------------------------------------------------ */
+	window.fillTextBounds = function () {
+		var t = selectedText();
+		if (!t) return;
+		if (!t.csOrig) t.csOrig = { x: t.x, y: t.y, width: t.width, height: t.height };
+		setNum('tb-x', (t.x || 0) * card.width);
+		setNum('tb-y', (t.y || 0) * card.height);
+		setNum('tb-w', (t.width || 1) * card.width);
+		setNum('tb-h', (t.height || 1) * card.height);
+		$('#text-editor-font-size').value = parseFloat(t.fontSize) || 0;
+		syncSliders();
+	};
+	window.textBoundsEdited = function () {
+		var t = selectedText();
+		if (!t) return;
+		t.x = num('tb-x', 0) / card.width;
+		t.y = num('tb-y', 0) / card.height;
+		t.width = Math.max(1, num('tb-w', card.width)) / card.width;
+		t.height = Math.max(1, num('tb-h', card.height)) / card.height;
+		drawTextSoon();
+		updateTextOutline();
+	};
+	window.resetTextBounds = function () {
+		var t = selectedText();
+		if (!t || !t.csOrig) return;
+		t.x = t.csOrig.x; t.y = t.csOrig.y; t.width = t.csOrig.width; t.height = t.csOrig.height;
+		t.fontSize = 0;
+		fillTextBounds();
+		drawTextSoon();
+		updateTextOutline();
+	};
+	// Remember where each text box was placed by its frame, for "Reset position".
+	var engineLoadTextOptions = window.loadTextOptions;
+	window.loadTextOptions = function (textObject, replace) {
+		Object.keys(textObject || {}).forEach(function (k) {
+			var t = textObject[k];
+			if (t && !t.csOrig) t.csOrig = { x: t.x, y: t.y, width: t.width, height: t.height };
+		});
+		var r = engineLoadTextOptions(textObject, replace);
+		setTimeout(fillTextBounds, 0);
+		return r;
+	};
+	function updateTextOutline() {
+		var el = $('#text-outline');
+		if (!el) return;
+		var t = (dragTarget === 'text' && rotation === 0 && !card.landscape) ? selectedText() : null;
+		if (!t || !previewCanvas.offsetWidth) { el.classList.add('hidden'); return; }
+		var cw = cardCanvas.width, ch = cardCanvas.height;
+		var x = ((t.x || 0) + card.marginX) * card.width / cw, y = ((t.y || 0) + card.marginY) * card.height / ch;
+		var w = (t.width || 1) * card.width / cw, h = (t.height || 1) * card.height / ch;
+		el.style.left = (previewCanvas.offsetLeft + x * previewCanvas.offsetWidth) + 'px';
+		el.style.top = (previewCanvas.offsetTop + y * previewCanvas.offsetHeight) + 'px';
+		el.style.width = (w * previewCanvas.offsetWidth) + 'px';
+		el.style.height = (h * previewCanvas.offsetHeight) + 'px';
+		el.classList.remove('hidden');
+	}
+	window.updateTextOutline = updateTextOutline;
+
+	/* ------------------------------------------------------------------
+	 * Sliders next to every position / size field
+	 * ------------------------------------------------------------------ */
+	var W = function () { return card.width || 2010; }, H = function () { return card.height || 2814; };
+	var sliderDefs = {
+		'art-x': function () { return [-W(), W(), 1]; },
+		'art-y': function () { return [-H(), H(), 1]; },
+		'art-zoom': function () { return [1, 500, 0.1]; },
+		'art-rotate': function () { return [0, 360, 0.5]; },
+		'setSymbol-x': function () { return [0, W(), 1]; },
+		'setSymbol-y': function () { return [0, H(), 1]; },
+		'setSymbol-zoom': function () { return [1, 400, 0.1]; },
+		'watermark-x': function () { return [-W() / 2, W(), 1]; },
+		'watermark-y': function () { return [-H() / 2, H(), 1]; },
+		'watermark-zoom': function () { return [1, 400, 0.1]; },
+		'watermark-opacity': function () { return [0, 100, 1]; },
+		'serial-x': function () { return [0, W(), 1]; },
+		'serial-y': function () { return [0, H(), 1]; },
+		'serial-scale': function () { return [0.1, 3, 0.01]; },
+		'tb-x': function () { return [-W() / 4, W(), 1]; },
+		'tb-y': function () { return [-H() / 4, H(), 1]; },
+		'tb-w': function () { return [10, W(), 1]; },
+		'tb-h': function () { return [10, H(), 1]; },
+		'text-editor-font-size': function () { return [-80, 80, 1]; },
+		'frame-editor-x': function () { return [-W(), W(), 1]; },
+		'frame-editor-y': function () { return [-H(), H(), 1]; },
+		'frame-editor-width': function () { return [1, 2 * W(), 1]; },
+		'frame-editor-height': function () { return [1, 2 * H(), 1]; },
+		'frame-editor-opacity': function () { return [0, 100, 1]; },
+		'textbox-editor-x': function () { return [-W() / 4, W(), 1]; },
+		'textbox-editor-y': function () { return [-H() / 4, H(), 1]; },
+		'textbox-editor-width': function () { return [10, W(), 1]; },
+		'textbox-editor-height': function () { return [10, H(), 1]; }
+	};
+	var sliders = [];
+	function syncSlider(p) {
+		var d = p.def(), v = parseFloat(p.input.value), min = d[0], max = d[1];
+		if (d[2] >= 1) { min = Math.floor(min); max = Math.ceil(max); } // whole-number steps from a whole-number start
+		if (isFinite(v)) {
+			if (v < min) min = Math.floor(v - Math.abs(v) * 0.25 - 1);
+			if (v > max) max = Math.ceil(v * 1.25 + 1);
+		}
+		if (!p.active) {
+			if (+p.range.min !== min) p.range.min = min;
+			if (+p.range.max !== max) p.range.max = max;
+			p.range.step = d[2];
+			if (isFinite(v) && +p.range.value !== v) p.range.value = v;
+		}
+	}
+	function syncSliders() {
+		for (var i = 0; i < sliders.length; i++) {
+			if (sliders[i].input.offsetParent !== null) syncSlider(sliders[i]);
+		}
+	}
+	window.syncSliders = syncSliders;
+	function attachSlider(id) {
+		var input = document.getElementById(id);
+		if (!input || input.dataset.slider) return;
+		input.dataset.slider = '1';
+		input.setAttribute('inputmode', 'decimal');
+		var range = document.createElement('input');
+		range.type = 'range';
+		range.className = 'slider';
+		range.setAttribute('aria-label', (input.closest('label, div') || input).textContent.trim() || id);
+		input.insertAdjacentElement('afterend', range);
+		input.parentElement.classList.add('has-slider');
+		var p = { input: input, range: range, def: sliderDefs[id], active: false };
+		range.addEventListener('pointerdown', function () { p.active = true; });
+		['pointerup', 'pointercancel', 'change', 'blur'].forEach(function (ev) {
+			range.addEventListener(ev, function () { p.active = false; syncSlider(p); });
+		});
+		range.addEventListener('input', function () {
+			input.value = range.value;
+			// fields use oninput (inline) or onchange (set by the engine)
+			input.dispatchEvent(new Event(input.oninput ? 'input' : 'change', { bubbles: true }));
+		});
+		input.addEventListener('input', function () { syncSlider(p); });
+		input.addEventListener('change', function () { syncSlider(p); });
+		sliders.push(p);
+		syncSlider(p);
+	}
+	function initSliders() {
+		Object.keys(sliderDefs).forEach(attachSlider);
+		// editors filled by the engine without events
+		$('#frame-list').addEventListener('click', function () { setTimeout(syncSliders, 0); });
+		$('#text-options').addEventListener('click', function () { setTimeout(fillTextBounds, 0); });
+	}
+
+	/* ------------------------------------------------------------------
+	 * Purple frames: each pack gets a purple version of its blue frames
+	 * (images made by scripts/make-purple-frames.py), at the end of the list
+	 * like on mtgcardbuilder.com. "Blue Frame" becomes "Purple".
+	 * ------------------------------------------------------------------ */
+	var purpleSources = {};
+	(window.CS_PURPLE_FRAMES || []).forEach(function (s) { purpleSources[s] = true; });
+	function addPurpleFrames(list) {
+		if (!Array.isArray(list) || list.some(function (f) { return f && f.csPurple; })) return;
+		var names = {};
+		list.forEach(function (f) { if (f && f.name) names[f.name] = true; });
+		var extra = [];
+		list.forEach(function (f) {
+			if (!f || !purpleSources[f.src] || !/\bBlue\b/.test(f.name || '')) return;
+			var name = f.name === 'Blue Frame' ? 'Purple' : f.name.replace(/\bBlue\b/, 'Purple');
+			if (names[name]) return;
+			names[name] = true;
+			extra.push(Object.assign({}, f, { name: name, src: f.src.replace(/\.png$/, '-purple.png'), csPurple: true }));
+		});
+		Array.prototype.push.apply(list, extra);
+	}
+	var engineLoadFramePack = window.loadFramePack;
+	window.loadFramePack = function (frameOptions) {
+		var list = frameOptions || availableFrames;
+		addPurpleFrames(list);
+		return engineLoadFramePack(list);
+	};
 
 	/* ------------------------------------------------------------------
 	 * Text: quick symbol bar
 	 * ------------------------------------------------------------------ */
 	function initSymbolBar() {
 		var bar = $('#symbol-bar');
-		var symbols = ['w', 'u', 'b', 'r', 'g', 'c', 'x', '1', '2', '3', '4', '5', 't', 'untap', 's', 'e'];
+		var symbols = ['w', 'u', 'b', 'r', 'g', 'purple', 'c', 'x', '1', '2', '3', '4', '5', 't', 'untap', 's', 'e'];
 		symbols.forEach(function (s) {
 			var b = document.createElement('button');
 			b.type = 'button';
@@ -767,31 +1031,52 @@
 	};
 
 	/* ------------------------------------------------------------------
-	 * Mobile mini preview
+	 * Phone layout: the card stays at the top while the settings scroll
+	 * under it (CSS), with three preview sizes and a horizontal tab strip.
 	 * ------------------------------------------------------------------ */
-	function paintMiniPreview() {
-		var c = $('#mini-preview-canvas');
-		if (c.width !== Math.round(previewCanvas.width / 2.5) || c.height !== Math.round(previewCanvas.height / 2.5)) {
-			c.width = Math.round(previewCanvas.width / 2.5);
-			c.height = Math.round(previewCanvas.height / 2.5);
-		}
-		var ctx = c.getContext('2d');
-		ctx.clearRect(0, 0, c.width, c.height);
-		ctx.drawImage(previewCanvas, 0, 0, c.width, c.height);
+	var PREVIEW_SIZES = ['30vh', '20vh', '46vh'];
+	var previewSize = Math.max(0, PREVIEW_SIZES.indexOf(lsGet('cs-preview-size')));
+	function isPhoneLayout() { return window.matchMedia('(max-width: 999px)').matches; }
+	function updateStickyOffsets() {
+		var root = document.documentElement.style;
+		root.setProperty('--topbar-h', $('.topbar').offsetHeight + 'px');
+		root.setProperty('--card-col-h', $('#card-column').offsetHeight + 'px');
+		updateTextOutline();
 	}
-	window.toggleMiniPreview = function () {
-		var mp = $('#mini-preview');
-		mp.classList.toggle('hidden');
-		if (!mp.classList.contains('hidden')) paintMiniPreview();
+	function applyPreviewSize() {
+		document.documentElement.style.setProperty('--preview-h', PREVIEW_SIZES[previewSize]);
+		requestAnimationFrame(updateStickyOffsets);
+	}
+	window.cyclePreviewSize = function () {
+		previewSize = (previewSize + 1) % PREVIEW_SIZES.length;
+		lsSet('cs-preview-size', PREVIEW_SIZES[previewSize]);
+		applyPreviewSize();
 	};
-	// Hide the floating preview while the real card is visible on screen.
-	if ('IntersectionObserver' in window) {
-		new IntersectionObserver(function (entries) {
-			var visible = entries[0].isIntersecting;
-			$('#mini-preview-toggle').style.opacity = visible ? '0' : '';
-			$('#mini-preview-toggle').style.pointerEvents = visible ? 'none' : '';
-			if (visible) $('#mini-preview').classList.add('hidden');
-		}, { threshold: 0.25 }).observe(previewCanvas);
+	var engineToggleCreatorTabs = window.toggleCreatorTabs;
+	window.toggleCreatorTabs = function (event, target) {
+		engineToggleCreatorTabs(event, target);
+		var auto = { text: 'text', art: 'art', setSymbol: 'symbol', watermark: 'watermark' }[target];
+		if (auto) setDragTarget(auto);
+		if (target === 'text') fillTextBounds();
+		syncSliders();
+		if (!isPhoneLayout()) return;
+		var tab = event && event.target && event.target.closest('h3');
+		var strip = $('#creator-menu-tabs');
+		if (tab && strip) strip.scrollTo({ left: tab.offsetLeft - (strip.clientWidth - tab.offsetWidth) / 2, behavior: 'smooth' });
+		// bring the top of the tab content right under the sticky card + tabs
+		var stickyBottom = strip.getBoundingClientRect().bottom;
+		var top = $('#creator-menu-sections').getBoundingClientRect().top;
+		if (Math.abs(top - stickyBottom) > 8) window.scrollTo({ top: window.scrollY + top - stickyBottom - 6, behavior: 'smooth' });
+	};
+	function initPhoneLayout() {
+		applyPreviewSize();
+		if ('ResizeObserver' in window) {
+			var ro = new ResizeObserver(function () { updateStickyOffsets(); });
+			ro.observe($('#card-column'));
+			ro.observe($('.topbar'));
+		}
+		window.addEventListener('resize', updateStickyOffsets);
+		document.body.dataset.view = 'editor';
 	}
 
 	/* ------------------------------------------------------------------
@@ -812,9 +1097,12 @@
 
 		toggleCardBackgroundColor($('#highlight-transparencies').checked = lsGet('cs-transparency') !== '0');
 		$('#show-legal-lines').checked = lsGet('cs-legal-lines') !== '0';
-		initArtGestures();
+		initCardGestures();
 		initSymbolBar();
 		initWatermarks();
+		initSliders();
+		initPhoneLayout();
+		setDragTarget('art');
 		var dl = $('#set-code-list');
 		((window.CS_DATA && CS_DATA.setCodes) || []).forEach(function (c) { var o = document.createElement('option'); o.value = c; dl.appendChild(o); });
 		$('#autoLoadFrameVersion').checked = lsGet('autoLoadFrameVersion') !== 'false';

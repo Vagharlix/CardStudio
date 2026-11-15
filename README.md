@@ -6,8 +6,8 @@ Usage personnel uniquement. Non affilié à Wizards of the Coast, ni sponsorisé
 
 ## Fonctionnalités
 
-- **Frame** : groupes et packs de cadres (Regular, Tokens, Sagas, Planeswalkers, Transform, Modal DFC, Showcase, Universes Beyond, Promos, Textless, anciens cadres…), recherche, *Load Frame Version*, *Rotate Frame*, *Auto load*, import de cadres perso, masques, ajout pleine carte / moitié droite / moitié gauche / centre, calques (glisser pour réordonner, clic pour opacité, position, teinte, masques).
-- **Text** : toutes les zones de texte, codes de mise en forme et de mana, barre de symboles rapide, gras / italique, bornes et taille de police, ajout d'un surnom, d'un F/E ou d'une date.
+- **Frame** : groupes et packs de cadres (Regular, Tokens, Sagas, Planeswalkers, Transform, Modal DFC, Showcase, Universes Beyond, Promos, Textless, anciens cadres…), recherche, *Load Frame Version*, *Rotate Frame*, *Auto load*, import de cadres perso, masques, ajout pleine carte / moitié droite / moitié gauche / centre, calques (glisser pour réordonner, clic pour opacité, position, teinte, masques). Chaque pack a aussi ses cadres **violets** (« Purple », en fin de liste comme sur mtgcardbuilder.com).
+- **Text** : toutes les zones de texte, codes de mise en forme et de mana (dont `{purple}`), barre de symboles rapide, gras / italique, position, taille de zone et taille de police au curseur, ajout d'un surnom, d'un F/E ou d'une date.
 - **Art** : import (fichier, glisser-déposer, URL), déplacement à la souris ou au doigt, pincer pour zoomer, Maj + glisser pour l'échelle, Ctrl + glisser pour la rotation, *Auto Fit*, niveaux de gris.
 - **Set Symbol** : 291 extensions disponibles hors ligne, avec la rareté, ou ton propre symbole.
 - **Watermark** : galerie avec recherche et catégories (guildes, clans, écoles, familles…), 434 symboles d'extension, couleurs gauche/droite, opacité, position.
@@ -15,7 +15,10 @@ Usage personnel uniquement. Non affilié à Wizards of the Coast, ni sponsorisé
 - **Import/Preset** : presets à partir de ta galerie (par catégorie), import d'une vraie carte depuis Scryfall (nécessite Internet), sauvegarde, chargement, export et import `.cardconjurer`.
 - **Save and Update Gallery**, **Download image** (PNG 2010×2814 ou JPEG), **Create Card Back**.
 - **Galerie** locale (sans limite de 5 Mo) et **Print PDF** : planche A4 ou Letter, cartes à 63×88 mm, traits de coupe, fond perdu.
-- Sauvegarde automatique de la carte en cours, thème sombre ou clair, interface adaptée au mobile.
+- **Sur la carte** : choisis ce que le glissement déplace (illustration, texte, symbole, filigrane). Toucher un texte le sélectionne, glisser le déplace, pincer (ou Maj + glisser) change sa taille.
+- **Curseurs** à côté de chaque position, taille, opacité et échelle (illustration, textes, symbole, filigrane, numéro de série, calques).
+- **Mise en page adaptative** : sur un écran large (ordinateur, tablette, téléphone pliable déplié, téléphone à l'horizontale), les réglages sont à côté de la carte. Sur un téléphone en portrait, ils passent dessous et la carte reste épinglée en haut (3 tailles d'aperçu), avec les onglets en bande et une barre d'actions en bas.
+- Sauvegarde automatique de la carte en cours, thème sombre ou clair.
 
 ## Installer
 
@@ -85,3 +88,5 @@ npx tauri android build --apk
 - `scripts/import-engine.mjs` : réimporte le moteur et les images depuis une copie de Card Conjurer, avec conversion WebP.
 - `scripts/vendor-ui.mjs` : copie les polices de l'interface et les symboles Keyrune.
 - `scripts/build-data.mjs` : génère la liste des extensions disponibles hors ligne.
+- `scripts/make-purple-frames.py` : crée la version violette de chaque cadre bleu des packs (`…-purple.webp`), avec la teinte calée sur celle de mtgcardbuilder.com, et la liste `web/js/app/purple-frames.js` (`pip install numpy pillow`).
+- `scripts/fix-fonts.py` : retire le hinting de `mplantin.ttf`, sinon le texte de règles est invisible sous Linux et macOS.
