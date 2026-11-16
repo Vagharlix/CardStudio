@@ -2,11 +2,11 @@
 // Not used inside the desktop/Android apps, which already ship every file.
 // Strategy: cache-first for files of this site; anything fetched once
 // (frame packs, images, fonts) stays available offline afterwards.
-const CACHE = 'card-studio-v4';
+const CACHE = 'card-studio-v5';
 const CORE = [
   '/', '/index.html', '/manifest.webmanifest',
   '/css/app.css', '/css/ui-fonts.css', '/css/card-fonts.css',
-  '/js/app/assets.js', '/js/app/generated.js', '/js/app/purple-frames.js', '/js/app/custom-frames.js', '/js/app/storage.js', '/js/app/platform.js', '/js/app/ui.js', '/js/app/print.js',
+  '/js/app/assets.js', '/js/app/generated.js', '/js/app/custom-frames.js', '/js/app/storage.js', '/js/app/platform.js', '/js/app/ui.js', '/js/app/print.js',
   '/js/main-1.js', '/js/creator-23.js', '/js/frameSearch.js',
   '/js/frames/groupStandard-3.js', '/js/frames/packM15Regular-1.js',
   '/icons/icon.svg', '/icons/icon-192.png', '/icons/icon-512.png'
