@@ -53,13 +53,18 @@ console.log('scripts:', scripts.length);
 // bottom info has no "midLeft" line (e.g. Flesh and Blood).
 const enginePath = path.join(web, 'js/creator-23.js');
 const MIDLEFT = "var bottomTextSubstring = card.bottomInfo.midLeft.text.substring(0, card.bottomInfo.midLeft.text.indexOf('  {savex}'))";
-const engine = fs.readFileSync(enginePath, 'utf8');
-if (engine.includes(MIDLEFT)) {
-  fs.writeFileSync(enginePath, engine.replace(MIDLEFT,
-    "var bottomTextSource = (card.bottomInfo && card.bottomInfo.midLeft || textObject).text || ''; var bottomTextSubstring = bottomTextSource.substring(0, bottomTextSource.indexOf('  {savex}'))"));
-}
+// 1b. Engine fix: the copyright line moves below the P/T box only for frames
+// named "... Power/Toughness"; also accept "... PT" (e.g. the site's "Purple PT"),
+// except "Reverse PT" / "Top PT", which are not in the bottom-right corner.
+const PT_CHECK = "card.frames.findIndex(element => element.name.toLowerCase().includes('power/toughness')) >= 0";
+let engine = fs.readFileSync(enginePath, 'utf8');
+engine = engine.replace(MIDLEFT,
+  "var bottomTextSource = (card.bottomInfo && card.bottomInfo.midLeft || textObject).text || ''; var bottomTextSubstring = bottomTextSource.substring(0, bottomTextSource.indexOf('  {savex}'))");
+engine = engine.replace(PT_CHECK,
+  "card.frames.findIndex(element => /power\\/toughness|^(?!reverse |top ).*\\bpt$/i.test(element.name)) >= 0");
+fs.writeFileSync(enginePath, engine);
 
-// 1b. Card fonts: keep only the @font-face rules of the original stylesheet.
+// 1c. Card fonts: keep only the @font-face rules of the original stylesheet.
 const css = fs.readFileSync(path.join(src, 'css/style-9.css'), 'utf8');
 const faces = (css.match(/@font-face\s*\{[^}]*\}/g) || [])
   // upstream typo: missing extension
