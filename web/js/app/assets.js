@@ -35,16 +35,37 @@
   }
   window.mapAsset = mapAsset;
 
+  // img.src still reads as the address that was asked for ("....png"), like on
+  // the site: frame scripts compare it with their own paths
+  // (e.g. `if (!img.src.endsWith('/x.png')) img.src = ...` would reload forever).
+  var asked = new WeakMap(); // img -> { asked, served } (absolute URLs)
+  function absolute(u) { try { return new URL(u, document.baseURI).href; } catch (e) { return u; } }
+  function remember(img, value, mapped) {
+    if (typeof value === 'string' && mapped !== value) asked.set(img, { asked: absolute(value), served: absolute(mapped) });
+    else asked.delete(img);
+  }
   var srcDesc = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
   Object.defineProperty(HTMLImageElement.prototype, 'src', {
     configurable: true,
     enumerable: srcDesc.enumerable,
-    get: srcDesc.get,
-    set: function (v) { srcDesc.set.call(this, mapAsset(v)); }
+    get: function () {
+      var current = srcDesc.get.call(this);
+      var a = asked.get(this);
+      return a && a.served === current ? a.asked : current;
+    },
+    set: function (v) {
+      var mapped = mapAsset(v);
+      remember(this, v, mapped);
+      srcDesc.set.call(this, mapped);
+    }
   });
   var setAttr = Element.prototype.setAttribute;
   Element.prototype.setAttribute = function (name, value) {
-    if (this instanceof HTMLImageElement && String(name).toLowerCase() === 'src') value = mapAsset(value);
+    if (this instanceof HTMLImageElement && String(name).toLowerCase() === 'src') {
+      var mapped = mapAsset(value);
+      remember(this, value, mapped);
+      value = mapped;
+    }
     return setAttr.call(this, name, value);
   };
   var xhrOpen = XMLHttpRequest.prototype.open;

@@ -62,9 +62,30 @@ engine = engine.replace(MIDLEFT,
   "var bottomTextSource = (card.bottomInfo && card.bottomInfo.midLeft || textObject).text || ''; var bottomTextSubstring = bottomTextSource.substring(0, bottomTextSource.indexOf('  {savex}'))");
 engine = engine.replace(PT_CHECK,
   "card.frames.findIndex(element => /power\\/toughness|^(?!reverse |top ).*\\bpt$/i.test(element.name)) >= 0");
+// 1b'. Engine fix: frame packs of mtgcardbuilder.com name their complementary
+// frame ("complementary:'Legend Crown Border Cover'") instead of giving its index.
+const COMPLEMENTARY = `			if (typeof frameToAdd.complementary == 'number') {
+				frameToAdd.complementary = [frameToAdd.complementary];
+			}
+			const realFrameIndex = selectedFrameIndex;
+			for (const index of frameToAdd.complementary) {
+				selectedFrameIndex = index;
+				await addFrame();
+			}`;
+engine = engine.replace(COMPLEMENTARY, `			if (typeof frameToAdd.complementary == 'number' || typeof frameToAdd.complementary == 'string') {
+				frameToAdd.complementary = [frameToAdd.complementary];
+			}
+			const realFrameIndex = selectedFrameIndex;
+			for (const index of frameToAdd.complementary) {
+				selectedFrameIndex = typeof index == 'string' ? availableFrames.findIndex(frame => frame.name == index) : index;
+				if (!availableFrames[selectedFrameIndex]) continue;
+				await addFrame();
+			}`);
 fs.writeFileSync(enginePath, engine);
 
 // 1c. Card fonts: keep only the @font-face rules of the original stylesheet.
+// scripts/import-site-frames.mjs then replaces them with the site's newer list:
+// run it after this script.
 const css = fs.readFileSync(path.join(src, 'css/style-9.css'), 'utf8');
 const faces = (css.match(/@font-face\s*\{[^}]*\}/g) || [])
   // upstream typo: missing extension
