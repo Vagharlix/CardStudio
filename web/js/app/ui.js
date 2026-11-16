@@ -661,14 +661,28 @@
 	}
 
 	/* ------------------------------------------------------------------
-	 * Purple frames: each pack gets a purple version of its blue frames
-	 * (images made by scripts/make-purple-frames.py), at the end of the list
-	 * like on mtgcardbuilder.com. "Blue Frame" becomes "Purple".
+	 * Purple frames, at the end of the pack like on mtgcardbuilder.com.
+	 * - Packs that have custom frames on the site get the site's own files
+	 *   (web/js/app/custom-frames.js, from scripts/import-site-custom-frames.mjs).
+	 * - The other packs get a purple version of their blue frames (images made
+	 *   by scripts/make-purple-frames.py). "Blue Frame" becomes "Purple".
 	 * ------------------------------------------------------------------ */
+	var siteFrames = window.CS_CUSTOM_FRAMES || {};
 	var purpleSources = {};
 	(window.CS_PURPLE_FRAMES || []).forEach(function (s) { purpleSources[s] = true; });
+	// Frame parts that are not a whole frame: the pack's masks make no sense on them.
+	var NOT_WHOLE_FRAME = /\b(PT|Crown|Stamp|Symbol|Icon|Reminder|Title|Rules|Miracle)\b/;
+
+	function addSiteFrames(list, frames) {
+		var masks = null;
+		list.some(function (f) { if (f && Array.isArray(f.masks) && f.masks.length) { masks = f.masks; return true; } return false; });
+		frames.forEach(function (f) {
+			var entry = { name: f.name, src: f.src, csExtra: true };
+			if (masks && !NOT_WHOLE_FRAME.test(f.name)) entry.masks = masks;
+			list.push(entry);
+		});
+	}
 	function addPurpleFrames(list) {
-		if (!Array.isArray(list) || list.some(function (f) { return f && f.csPurple; })) return;
 		var names = {};
 		list.forEach(function (f) { if (f && f.name) names[f.name] = true; });
 		var extra = [];
@@ -677,14 +691,27 @@
 			var name = f.name === 'Blue Frame' ? 'Purple' : f.name.replace(/\bBlue\b/, 'Purple');
 			if (names[name]) return;
 			names[name] = true;
-			extra.push(Object.assign({}, f, { name: name, src: f.src.replace(/\.png$/, '-purple.png'), csPurple: true }));
+			extra.push(Object.assign({}, f, { name: name, src: f.src.replace(/\.png$/, '-purple.png'), csExtra: true }));
 		});
 		Array.prototype.push.apply(list, extra);
+	}
+	// Pack scripts call loadFramePack() while they run: the running script
+	// tells which pack this is.
+	function currentPackId() {
+		var script = document.currentScript;
+		var m = script && /\/pack([^\/?#]+)\.js(?:[?#]|$)/.exec(script.src || '');
+		if (m) { try { return decodeURIComponent(m[1]); } catch (e) { return m[1]; } }
+		var select = $('#selectFramePack');
+		return select ? select.value : '';
 	}
 	var engineLoadFramePack = window.loadFramePack;
 	window.loadFramePack = function (frameOptions) {
 		var list = frameOptions || availableFrames;
-		addPurpleFrames(list);
+		if (Array.isArray(list) && !list.some(function (f) { return f && f.csExtra; })) {
+			var site = siteFrames[currentPackId()];
+			if (site) addSiteFrames(list, site);
+			else addPurpleFrames(list);
+		}
 		return engineLoadFramePack(list);
 	};
 

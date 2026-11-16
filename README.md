@@ -6,7 +6,7 @@ Usage personnel uniquement. Non affilié à Wizards of the Coast, ni sponsorisé
 
 ## Fonctionnalités
 
-- **Frame** : groupes et packs de cadres (Regular, Tokens, Sagas, Planeswalkers, Transform, Modal DFC, Showcase, Universes Beyond, Promos, Textless, anciens cadres…), recherche, *Load Frame Version*, *Rotate Frame*, *Auto load*, import de cadres perso, masques, ajout pleine carte / moitié droite / moitié gauche / centre, calques (glisser pour réordonner, clic pour opacité, position, teinte, masques). Chaque pack a aussi ses cadres **violets** (« Purple », en fin de liste comme sur mtgcardbuilder.com).
+- **Frame** : groupes et packs de cadres (Regular, Tokens, Sagas, Planeswalkers, Transform, Modal DFC, Showcase, Universes Beyond, Promos, Textless, anciens cadres…), recherche, *Load Frame Version*, *Rotate Frame*, *Auto load*, import de cadres perso, masques, ajout pleine carte / moitié droite / moitié gauche / centre, calques (glisser pour réordonner, clic pour opacité, position, teinte, masques). Les cadres **violets** et autres cadres « custom » de mtgcardbuilder.com sont inclus (fichiers du site, en fin de liste comme sur le site : « Purple », « Purple PT », « Purple Crown »…). Les packs où le site n'a pas de violet en ont une version générée à partir du bleu.
 - **Text** : toutes les zones de texte, codes de mise en forme et de mana (dont `{purple}`), barre de symboles rapide, gras / italique, position, taille de zone et taille de police au curseur, ajout d'un surnom, d'un F/E ou d'une date.
 - **Art** : import (fichier, glisser-déposer, URL), déplacement à la souris ou au doigt, pincer pour zoomer, Maj + glisser pour l'échelle, Ctrl + glisser pour la rotation, *Auto Fit*, niveaux de gris.
 - **Set Symbol** : 291 extensions disponibles hors ligne, avec la rareté, ou ton propre symbole.
@@ -88,5 +88,7 @@ npx tauri android build --apk
 - `scripts/import-engine.mjs` : réimporte le moteur et les images depuis une copie de Card Conjurer, avec conversion WebP.
 - `scripts/vendor-ui.mjs` : copie les polices de l'interface et les symboles Keyrune.
 - `scripts/build-data.mjs` : génère la liste des extensions disponibles hors ligne.
-- `scripts/make-purple-frames.py` : crée la version violette de chaque cadre bleu des packs (`…-purple.webp`), avec la teinte calée sur celle de mtgcardbuilder.com, et la liste `web/js/app/purple-frames.js` (`pip install numpy pillow`).
+- `scripts/import-site-custom-frames.mjs` : copie les cadres « custom » de mtgcardbuilder.com (listes `/js/customFrames/Custom<pack>.json`, images `/img/frames/customParts/`) dans `web/img/frames/customParts/` en WebP, et écrit `web/js/app/custom-frames.js` (nécessite Internet).
+- `scripts/make-purple-frames.py` : pour les packs sans violet sur le site, crée la version violette de chaque cadre bleu (`…-purple.webp`) et la liste `web/js/app/purple-frames.js` (`pip install numpy pillow`). À lancer après le script précédent.
+- `scripts/collect-site-purple-frames.js` : à coller dans la console du navigateur sur mtgcardbuilder.com, pour lister les cadres violets affichés aux comptes connectés.
 - `scripts/fix-fonts.py` : retire le hinting de `mplantin.ttf`, sinon le texte de règles est invisible sous Linux et macOS.
