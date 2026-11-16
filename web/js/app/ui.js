@@ -661,15 +661,11 @@
 	}
 
 	/* ------------------------------------------------------------------
-	 * Purple frames, at the end of the pack like on mtgcardbuilder.com.
-	 * - Packs that have custom frames on the site get the site's own files
-	 *   (web/js/app/custom-frames.js, from scripts/import-site-custom-frames.mjs).
-	 * - The other packs get a purple version of their blue frames (images made
-	 *   by scripts/make-purple-frames.py). "Blue Frame" becomes "Purple".
+	 * Custom frames of mtgcardbuilder.com (purple frames and a few extras),
+	 * at the end of the pack like on the site: web/js/app/custom-frames.js,
+	 * from scripts/import-site-custom-frames.mjs.
 	 * ------------------------------------------------------------------ */
 	var siteFrames = window.CS_CUSTOM_FRAMES || {};
-	var purpleSources = {};
-	(window.CS_PURPLE_FRAMES || []).forEach(function (s) { purpleSources[s] = true; });
 	// Frame parts that are not a whole frame: the pack's masks make no sense on them.
 	var NOT_WHOLE_FRAME = /\b(PT|Crown|Stamp|Symbol|Icon|Reminder|Title|Rules|Miracle)\b/;
 
@@ -681,19 +677,6 @@
 			if (masks && !NOT_WHOLE_FRAME.test(f.name)) entry.masks = masks;
 			list.push(entry);
 		});
-	}
-	function addPurpleFrames(list) {
-		var names = {};
-		list.forEach(function (f) { if (f && f.name) names[f.name] = true; });
-		var extra = [];
-		list.forEach(function (f) {
-			if (!f || !purpleSources[f.src] || !/\bBlue\b/.test(f.name || '')) return;
-			var name = f.name === 'Blue Frame' ? 'Purple' : f.name.replace(/\bBlue\b/, 'Purple');
-			if (names[name]) return;
-			names[name] = true;
-			extra.push(Object.assign({}, f, { name: name, src: f.src.replace(/\.png$/, '-purple.png'), csExtra: true }));
-		});
-		Array.prototype.push.apply(list, extra);
 	}
 	// Pack scripts call loadFramePack() while they run: the running script
 	// tells which pack this is.
@@ -710,7 +693,6 @@
 		if (Array.isArray(list) && !list.some(function (f) { return f && f.csExtra; })) {
 			var site = siteFrames[currentPackId()];
 			if (site) addSiteFrames(list, site);
-			else addPurpleFrames(list);
 		}
 		return engineLoadFramePack(list);
 	};
