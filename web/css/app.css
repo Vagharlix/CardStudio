@@ -350,11 +350,12 @@ button.input:not(.btn-red) { cursor: pointer; background: var(--input-bg-2); }
 .download-alt a { color: var(--muted); }
 
 /* ---------- Popups from the engine ---------- */
+/* Side panel over the settings column, so the card stays visible while adjusting. */
 .frame-element-editor, .textbox-editor {
-	display: none; position: fixed; z-index: 40; top: 50%; left: 50%; transform: translate(-50%, -50%);
-	width: min(64rem, calc(100vw - 2rem)); max-height: calc(100vh - 4rem); overflow-y: auto;
+	display: none; position: fixed; z-index: 40; top: 84px; right: 1rem;
+	width: min(38rem, calc(54vw - 2rem)); max-height: calc(100vh - 104px); overflow-y: auto; overscroll-behavior: contain;
 	background: var(--panel); border-radius: 16px; box-shadow: 0 20px 60px rgba(0, 0, 0, .55);
-	padding: 1.4rem; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 1rem;
+	padding: 1.2rem; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: .8rem 1rem; align-content: start;
 }
 .frame-element-editor.opened, .textbox-editor.opened { display: grid; }
 .frame-element-editor-title, .textbox-editor-title { grid-column: 1 / -2; color: var(--heading); font-size: 1.4rem; }
@@ -400,35 +401,154 @@ button.input:not(.btn-red) { cursor: pointer; background: var(--input-bg-2); }
 .print-item label { display: flex; justify-content: space-between; align-items: center; font-size: .85rem; gap: 6px; }
 .print-item input { width: 4.5rem; min-height: 36px; }
 
-/* ---------- Mobile floating preview ---------- */
-.mini-preview-toggle {
-	display: none; position: fixed; z-index: 35; right: 14px; bottom: calc(14px + env(safe-area-inset-bottom));
-	width: 54px; height: 54px; border-radius: 50%; border: none; cursor: pointer;
-	background: var(--orange); box-shadow: 0 6px 20px rgba(0, 0, 0, .45);
-}
-.mini-preview-toggle svg { width: 26px; height: 26px; fill: none; stroke: #fff; stroke-width: 1.8; }
-.mini-preview {
-	position: fixed; z-index: 34; right: 14px; bottom: calc(78px + env(safe-area-inset-bottom));
-	width: min(46vw, 230px); border-radius: 10px; overflow: hidden; box-shadow: 0 10px 30px rgba(0, 0, 0, .6);
-}
-.mini-preview canvas { display: block; width: 100%; height: auto; }
-
 .footer { text-align: center; color: var(--muted); font-size: .8rem; padding: 2rem 1rem calc(2rem + env(safe-area-inset-bottom)); }
+
+/* ---------- Card tools: what dragging moves, outline of the selected text ---------- */
+.card-stage { position: relative; }
+.text-outline {
+	position: absolute; pointer-events: none; border: 2px dashed #ffd166; border-radius: 4px;
+	box-shadow: 0 0 0 1px rgba(0, 0, 0, .55), inset 0 0 0 1px rgba(0, 0, 0, .35);
+}
+.card-tools { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 10px; }
+.drag-target { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.drag-label { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); margin-right: 2px; }
+.drag-target button, .preview-size {
+	border: none; cursor: pointer; border-radius: 999px; padding: 7px 13px; font-weight: 600; font-size: .88rem;
+	background: var(--tab); color: var(--tab-text); -webkit-tap-highlight-color: transparent;
+}
+.drag-target button.active { background: var(--selected); color: #fff; }
+.preview-size { display: none; padding: 7px 9px; }
+.preview-size svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; display: block; }
+.drag-hint { text-align: center; font-size: .82rem; color: var(--muted); margin-top: 6px; }
+.topbar-theme { display: none; margin-left: auto; width: 38px; height: 38px; border: none; border-radius: 10px; background: rgba(0, 0, 0, .25); cursor: pointer; place-items: center; }
+.topbar-theme svg { width: 20px; height: 20px; fill: #fff; }
+
+/* ---------- Sliders next to number fields ---------- */
+.has-slider { display: grid; grid-template-columns: minmax(0, 1fr) minmax(4.5rem, 6.5rem); gap: 2px 10px; align-items: center; }
+.has-slider > span, .has-slider > h5 { grid-column: 1; margin: 0 !important; }
+.has-slider > .input { grid-column: 2; min-height: 36px; padding: 5px 8px; text-align: right; }
+.has-slider > .slider { grid-column: 1 / -1; }
+.input-grid.labeled:has(> label.has-slider) { grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 10px 16px; }
+.slider {
+	-webkit-appearance: none; appearance: none; width: 100%; height: 30px; background: transparent; cursor: pointer; margin: 0;
+	touch-action: pan-y;
+}
+.slider:focus { outline: none; }
+.slider::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: var(--input-bg); }
+.slider::-webkit-slider-thumb {
+	-webkit-appearance: none; width: 22px; height: 22px; margin-top: -8px; border-radius: 50%;
+	background: var(--selected); border: 3px solid #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, .45);
+}
+.slider::-moz-range-track { height: 6px; border-radius: 3px; background: var(--input-bg); }
+.slider::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--selected); border: 3px solid #fff; }
+.slider:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px rgba(30, 117, 201, .5); }
+
+/* ---------- Phone action bar ---------- */
+.mobile-actions { display: none; }
 
 /* ---------- Responsive ---------- */
 @media (max-width: 1100px) {
 	.creator-menu-tabs > h3 { font-size: 1.3rem; padding: 14px 4px; }
 	.sec-title { font-size: 1.08rem; }
 }
-@media (max-width: 900px) {
+/* Below 1000px: tab strip, action bar at the bottom, compact header. */
+@media (max-width: 999px) {
 	body { font-size: 14px; }
-	.creator-grid { grid-template-columns: 1fr; }
-	.card-column { position: static; max-width: 520px; width: 100%; margin: 0 auto; }
-	.creator-menu-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-	.mini-preview-toggle { display: grid; place-items: center; }
 	.topbar-inner { gap: 1rem; }
+	.topbar-theme { display: grid; }
 	.gallery-toolbar { grid-template-columns: 1fr 1fr; }
 	.intro { padding-top: 1.4rem; }
+	#view-editor > .intro, #view-editor > .darkmode-row { display: none; }
+	.creator-grid { padding-top: 10px; }
+
+	.creator-menu-tabs {
+		display: flex; overflow-x: auto; gap: 6px; scrollbar-width: none;
+		position: sticky; top: var(--topbar-h, 64px); z-index: 11;
+		margin: 0 0 8px; padding: 6px 0 8px; background: var(--page-bg);
+	}
+	.creator-menu-tabs::-webkit-scrollbar { display: none; }
+	.creator-menu-tabs > h3 { flex: 0 0 auto; font-size: 1rem; padding: 9px 15px; border-radius: 999px; }
+	.input-grid.labeled:has(> label.has-slider) { grid-template-columns: 1fr; }
+
+	/* Main actions in a bar at the bottom of the screen */
+	#view-editor .action-buttons, #view-editor .download-alt { display: none; }
+	body[data-view="editor"] { padding-bottom: calc(66px + env(safe-area-inset-bottom)); }
+	body[data-view="editor"] .mobile-actions {
+		display: grid; grid-template-columns: repeat(4, 1fr); position: fixed; z-index: 30; left: 0; right: 0; bottom: 0;
+		padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); background: var(--header-bg);
+		box-shadow: 0 -6px 18px rgba(0, 0, 0, .35);
+	}
+	.mobile-actions button {
+		border: none; background: none; color: #fff; cursor: pointer; display: grid; justify-items: center; gap: 2px;
+		font-size: .72rem; font-weight: 600; padding: 4px 0; border-radius: 10px; -webkit-tap-highlight-color: transparent;
+	}
+	.mobile-actions button:active { background: rgba(255, 255, 255, .12); }
+	.mobile-actions svg { width: 24px; height: 24px; fill: none; stroke: #fff; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+	body[data-view="editor"] .notification-container { bottom: calc(76px + env(safe-area-inset-bottom)); }
+	body[data-view="editor"] .footer { display: none; }
+	html:has(body[data-view="editor"]) { scroll-padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
+	.frame-element-editor, .textbox-editor { bottom: calc(76px + env(safe-area-inset-bottom)); max-height: none; }
+}
+
+/* 640-999px (unfolded foldable, tablet, phone in landscape): the settings sit
+   beside the card, so both are visible at the same time. */
+@media (min-width: 640px) and (max-width: 999px) {
+	.creator-grid { grid-template-columns: minmax(0, 44fr) minmax(0, 56fr); gap: 14px; }
+	.card-column { top: calc(var(--topbar-h, 64px) + 8px); }
+	.card-stage { display: flex; justify-content: center; }
+	.creator-canvas {
+		width: auto; height: auto; max-width: 100%;
+		max-height: calc(100vh - var(--topbar-h, 64px) - 150px); max-height: calc(100dvh - var(--topbar-h, 64px) - 150px);
+	}
+	.card-tools { flex-wrap: wrap; }
+	.drag-label { display: none; }
+	.drag-target button { padding: 6px 10px; font-size: .82rem; }
+	.drag-hint { font-size: .76rem; }
+	html:has(body[data-view="editor"]) { scroll-padding-top: calc(var(--topbar-h, 56px) + 64px); }
+	@media (max-height: 560px) {
+		/* phone in landscape: every pixel of height goes to the card */
+		.drag-hint { display: none; }
+		.creator-canvas { max-height: calc(100vh - var(--topbar-h, 64px) - 120px); max-height: calc(100dvh - var(--topbar-h, 64px) - 120px); }
+		.topbar-inner { height: 48px; }
+		.brand-icon { width: 30px; height: 30px; }
+	}
+	/* layer / text box editors: panel over the settings column */
+	.frame-element-editor, .textbox-editor {
+		top: calc(var(--topbar-h, 64px) + 8px); right: 8px; width: min(30rem, calc(56vw - 16px));
+		grid-template-columns: 1fr;
+	}
+	.frame-element-editor-title, .textbox-editor-title { grid-row: 1; grid-column: 1; padding-right: 2.5rem; }
+	.frame-element-editor-close, .textbox-editor-close { grid-row: 1; grid-column: 1; justify-self: end; align-self: start; }
+}
+
+/* Below 640px (phone in portrait): settings under the card, which stays pinned
+   at the top while they scroll. */
+@media (max-width: 639px) {
+	html:has(body[data-view="editor"]) {
+		scroll-padding-top: calc(var(--topbar-h, 56px) + var(--card-col-h, 0px) + 60px);
+	}
+	.creator-grid { grid-template-columns: 1fr; gap: 0; padding-top: 0; }
+	.card-column {
+		position: sticky; top: var(--topbar-h, 64px); z-index: 12; max-width: none; width: auto;
+		margin: 0 -1rem; padding: 8px 1rem 6px; background: var(--page-bg);
+		box-shadow: 0 10px 12px -10px rgba(0, 0, 0, .6);
+	}
+	.card-stage { display: flex; justify-content: center; }
+	.creator-canvas { width: auto; height: var(--preview-h, 30vh); max-width: 100%; box-shadow: 0 6px 18px rgba(0, 0, 0, .35); }
+	.card-stage.rotated-90, .card-stage.rotated-270 { padding: 0; }
+	.card-tools { margin-top: 8px; }
+	.drag-hint { display: none; }
+	.preview-size { display: block; }
+	.creator-menu-tabs { top: calc(var(--topbar-h, 64px) + var(--card-col-h, 0px)); margin: 0 -1rem 8px; padding: 6px 1rem 8px; }
+
+	/* Layer / text box editors become a bottom sheet under the pinned card */
+	.frame-element-editor, .textbox-editor {
+		top: auto; right: 0; left: 0; bottom: 0; width: 100%; max-height: 52vh;
+		border-radius: 18px 18px 0 0; padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom));
+		grid-template-columns: 1fr; z-index: 45;
+	}
+	.frame-element-editor-title, .textbox-editor-title { grid-row: 1; grid-column: 1; padding-right: 2.5rem; }
+	.frame-element-editor-close, .textbox-editor-close { grid-row: 1; grid-column: 1; justify-self: end; align-self: start; }
 }
 @media (max-width: 600px) {
 	.topbar-inner { height: 56px; padding: 0 .8rem; }
@@ -438,7 +558,10 @@ button.input:not(.btn-red) { cursor: pointer; background: var(--input-bg-2); }
 	.topnav { gap: 1rem; }
 	.topnav a { font-size: .85rem; }
 	.creator-grid { padding: 0 .6rem 1rem; }
-	.creator-menu-tabs > h3 { font-size: 1.2rem; padding: 12px 4px; }
+	.card-column { margin: 0 -.6rem; padding-left: .6rem; padding-right: .6rem; }
+	.creator-menu-tabs { margin-left: -.6rem; margin-right: -.6rem; padding-left: .6rem; padding-right: .6rem; }
+	.drag-label { display: none; }
+	.drag-target button, .preview-size { padding: 7px 11px; font-size: .84rem; }
 	.input-grid.three { grid-template-columns: 1fr; }
 	.input-grid.three.labeled, .input-grid.four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 	.input-grid.three.checks { grid-template-columns: 1fr; }

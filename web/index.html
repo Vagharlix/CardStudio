@@ -27,6 +27,9 @@
 				<a href="#gallery" data-view="gallery" onclick="showView('gallery'); return false;">Gallery</a>
 				<a href="#print" data-view="print" onclick="showView('print'); return false;">Print PDF</a>
 			</nav>
+			<button class="topbar-theme" type="button" onclick="toggleTheme()" aria-label="Toggle dark mode">
+				<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.6A8.5 8.5 0 0 1 9.4 3.5a8.5 8.5 0 1 0 11.1 11.1Z"/></svg>
+			</button>
 		</div>
 	</header>
 	<div class="notification-container"></div>
@@ -95,10 +98,24 @@
 		</div>
 
 		<div class='creator-grid'>
-			<div class="card-column">
-				<div class="card-stage">
+			<div class="card-column" id="card-column">
+				<div class="card-stage" id="card-stage">
 					<canvas class='creator-canvas' id='previewCanvas' width='1005' height='1407'></canvas>
+					<div id="text-outline" class="text-outline hidden" aria-hidden="true"></div>
 				</div>
+				<div class="card-tools">
+					<div class="drag-target" role="group" aria-label="What dragging the card moves">
+						<span class="drag-label">Drag moves</span>
+						<button type="button" data-target="art" class="active" onclick="setDragTarget('art')">Art</button>
+						<button type="button" data-target="text" onclick="setDragTarget('text')">Text</button>
+						<button type="button" data-target="symbol" onclick="setDragTarget('symbol')">Symbol</button>
+						<button type="button" data-target="watermark" onclick="setDragTarget('watermark')">Watermark</button>
+					</div>
+					<button type="button" id="preview-size" class="preview-size" onclick="cyclePreviewSize()" aria-label="Change the preview size">
+						<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg>
+					</button>
+				</div>
+				<p class="drag-hint" id="drag-hint">Drag the card to move the art. Pinch, or Shift + drag, to resize.</p>
 			</div>
 
 			<div class='creator-menu'>
@@ -239,15 +256,19 @@
 								<button class='input btn-red' onclick="toggleTextTag('bold');">Bold</button>
 							</div>
 							<div class="symbol-bar" id="symbol-bar" aria-label="Insert a symbol"></div>
-							<div class='input-grid two'>
-								<div>
-									<h5 class='input-description'>Placement and size of the selected textbox</h5>
-									<button class='input btn-red' onclick='textboxEditor();'>Edit Bounds</button>
-								</div>
-								<div>
-									<h5 class='input-description'>Adjust font size</h5>
-									<input id="text-editor-font-size" class="input" type="number" placeholder="0" value="0" step="1" oninput="fontSizedEdited();">
-								</div>
+						</div>
+						<div class='readable-background panel'>
+							<h4 class="sec-title">Position &amp; size of the selected text</h4>
+							<div class='input-grid labeled sliders'>
+								<label><span>X</span><input id="tb-x" type="number" class="input" step="1" inputmode="decimal" oninput="textBoundsEdited()"></label>
+								<label><span>Y</span><input id="tb-y" type="number" class="input" step="1" inputmode="decimal" oninput="textBoundsEdited()"></label>
+								<label><span>Width</span><input id="tb-w" type="number" class="input" step="1" min="1" inputmode="decimal" oninput="textBoundsEdited()"></label>
+								<label><span>Height</span><input id="tb-h" type="number" class="input" step="1" min="1" inputmode="decimal" oninput="textBoundsEdited()"></label>
+								<label><span>Font size (+/-)</span><input id="text-editor-font-size" class="input" type="number" placeholder="0" value="0" step="1" inputmode="decimal" oninput="fontSizedEdited();"></label>
+							</div>
+							<div class="input-grid two margin-top">
+								<button class='input btn-red' type="button" onclick="resetTextBounds()">Reset position</button>
+								<button class='input btn-red' type="button" onclick="setDragTarget('text'); notify('Drag the text on the card. Tap another text on the card to select it.', 4);">Move on the card</button>
 							</div>
 						</div>
 						<div class='readable-background panel'>
@@ -777,11 +798,25 @@
 		</div>
 	</main>
 
-	<!-- Mobile floating preview -->
-	<button id="mini-preview-toggle" class="mini-preview-toggle" type="button" onclick="toggleMiniPreview()" aria-label="Show card preview">
-		<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M9 8h6M9 12h6"/></svg>
-	</button>
-	<div id="mini-preview" class="mini-preview hidden" onclick="toggleMiniPreview()"><canvas id="mini-preview-canvas" width="402" height="563"></canvas></div>
+	<!-- Mobile: main actions always at hand -->
+	<nav class="mobile-actions" id="mobile-actions" aria-label="Card actions">
+		<button type="button" onclick="saveToGallery()">
+			<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>
+			<span>Save</span>
+		</button>
+		<button type="button" onclick="downloadCard()">
+			<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"/></svg>
+			<span>Download</span>
+		</button>
+		<button type="button" onclick="createCardBack()">
+			<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 2l3 3-3 3M20 5H8a4 4 0 0 0-4 4v1M7 22l-3-3 3-3M4 19h12a4 4 0 0 0 4-4v-1"/></svg>
+			<span>Card back</span>
+		</button>
+		<button type="button" onclick="newCard()">
+			<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+			<span>New</span>
+		</button>
+	</nav>
 
 	<!-- Modal dialog (replaces prompt/confirm, which are unreliable in app webviews) -->
 	<div id="dialog" class="dialog hidden" role="dialog" aria-modal="true">
@@ -804,6 +839,8 @@
 	<script defer src='/js/creator-23.js'></script>
 	<script defer src='/js/frameSearch.js'></script>
 	<script defer src='/js/app/generated.js'></script>
+	<script defer src='/js/app/purple-frames.js'></script>
+	<script defer src='/js/app/custom-frames.js'></script>
 	<script defer src='/js/app/storage.js'></script>
 	<script defer src='/js/app/platform.js'></script>
 	<script defer src='/js/app/ui.js'></script>

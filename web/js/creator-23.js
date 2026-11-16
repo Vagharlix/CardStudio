@@ -3684,7 +3684,7 @@ function writeText(textObject, targetContext) {
 						wordToWrite = document.querySelector('#' + word.replace('{elemid', '').replace('}', '')).value || '';
 					}
 					if (word.includes('set')) {
-						var bottomTextSubstring = card.bottomInfo.midLeft.text.substring(0, card.bottomInfo.midLeft.text.indexOf('  {savex}')).replace('{elemidinfo-set}', document.querySelector('#info-set').value || '').replace('{elemidinfo-language}', document.querySelector('#info-language').value || '');
+						var bottomTextSource = (card.bottomInfo && card.bottomInfo.midLeft || textObject).text || ''; var bottomTextSubstring = bottomTextSource.substring(0, bottomTextSource.indexOf('  {savex}')).replace('{elemidinfo-set}', document.querySelector('#info-set').value || '').replace('{elemidinfo-language}', document.querySelector('#info-language').value || '');
 						justifyWidth = lineContext.measureText(bottomTextSubstring).width;
 					} else if (word.includes('number') && wordToWrite.includes('/') && card.version != 'pokemon') {
 						fillJustify = true;
