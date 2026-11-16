@@ -49,6 +49,16 @@ for (const f of fs.readdirSync(path.join(src, 'js/frames'))) scripts.push('js/fr
 scripts.forEach(copy);
 console.log('scripts:', scripts.length);
 
+// 1a. Engine fix: collector lines with {elemidinfo-set} crash on frames whose
+// bottom info has no "midLeft" line (e.g. Flesh and Blood).
+const enginePath = path.join(web, 'js/creator-23.js');
+const MIDLEFT = "var bottomTextSubstring = card.bottomInfo.midLeft.text.substring(0, card.bottomInfo.midLeft.text.indexOf('  {savex}'))";
+const engine = fs.readFileSync(enginePath, 'utf8');
+if (engine.includes(MIDLEFT)) {
+  fs.writeFileSync(enginePath, engine.replace(MIDLEFT,
+    "var bottomTextSource = (card.bottomInfo && card.bottomInfo.midLeft || textObject).text || ''; var bottomTextSubstring = bottomTextSource.substring(0, bottomTextSource.indexOf('  {savex}'))"));
+}
+
 // 1b. Card fonts: keep only the @font-face rules of the original stylesheet.
 const css = fs.readFileSync(path.join(src, 'css/style-9.css'), 'utf8');
 const faces = (css.match(/@font-face\s*\{[^}]*\}/g) || [])
