@@ -3011,12 +3011,13 @@ async function addFrame(additionalMasks = [], loadingFrame = false) {
 		});
 		// Likewise, we now add any complementary frames
 		if ('complementary' in frameToAdd && frameToAdd.masks.length == 0) {
-			if (typeof frameToAdd.complementary == 'number') {
+			if (typeof frameToAdd.complementary == 'number' || typeof frameToAdd.complementary == 'string') {
 				frameToAdd.complementary = [frameToAdd.complementary];
 			}
 			const realFrameIndex = selectedFrameIndex;
 			for (const index of frameToAdd.complementary) {
-				selectedFrameIndex = index;
+				selectedFrameIndex = typeof index == 'string' ? availableFrames.findIndex(frame => frame.name == index) : index;
+				if (!availableFrames[selectedFrameIndex]) continue;
 				await addFrame();
 			}
 			selectedFrameIndex = realFrameIndex;
