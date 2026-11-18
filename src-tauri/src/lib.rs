@@ -95,7 +95,29 @@ fn write_file(app: &AppHandle, name: &str, bytes: &[u8]) -> Result<Option<String
     Err(last_error)
 }
 
-/// Saves the raw request body under the name given in the `x-file-name` header.
+/// File bytes sent as JSON. Android has no binary IPC channel (its webview
+/// cannot read request bodies), so the app sends `{"data": "<base64>"}` there;
+/// a plain array of byte values is accepted too.
+fn bytes_from_json(value: &serde_json::Value) -> Result<Vec<u8>, String> {
+    use base64::Engine;
+    match value {
+        serde_json::Value::Object(map) => match map.get("data") {
+            Some(data) => bytes_from_json(data),
+            None => Err("missing file data".into()),
+        },
+        serde_json::Value::String(text) => base64::engine::general_purpose::STANDARD
+            .decode(text.as_bytes())
+            .map_err(|e| format!("invalid file data: {e}")),
+        serde_json::Value::Array(items) => items
+            .iter()
+            .map(|v| v.as_u64().and_then(|n| u8::try_from(n).ok()).ok_or_else(|| "invalid file data".to_string()))
+            .collect(),
+        _ => Err("missing file data".into()),
+    }
+}
+
+/// Saves the request body under the name given in the `x-file-name` header:
+/// raw bytes (desktop), or base64 in JSON (Android).
 #[tauri::command]
 async fn save_file(app: AppHandle, request: Request<'_>) -> Result<Option<String>, String> {
     let raw_name = request
@@ -104,10 +126,10 @@ async fn save_file(app: AppHandle, request: Request<'_>) -> Result<Option<String
         .and_then(|v| v.to_str().ok())
         .unwrap_or("card.png");
     let name = sanitize_file_name(&percent_encoding::percent_decode_str(raw_name).decode_utf8_lossy());
-    let InvokeBody::Raw(bytes) = request.body() else {
-        return Err("expected a binary body".into());
-    };
-    write_file(&app, &name, bytes)
+    match request.body() {
+        InvokeBody::Raw(bytes) => write_file(&app, &name, bytes),
+        InvokeBody::Json(value) => write_file(&app, &name, &bytes_from_json(value)?),
+    }
 }
 
 /// Opens an http(s) link in the default browser.
@@ -139,6 +161,18 @@ mod tests {
         assert_eq!(sanitize_file_name("a/b:c?.png"), "a_b_c_.png");
         assert_eq!(sanitize_file_name("  ...  "), "card.png");
         assert_eq!(sanitize_file_name("Ember Wyrm.png"), "Ember Wyrm.png");
+    }
+
+    #[test]
+    fn decodes_json_bodies() {
+        use serde_json::json;
+        assert_eq!(bytes_from_json(&json!({"data": "iVBORw0KGgo="})).unwrap(), b"\x89PNG\r\n\x1a\n");
+        assert_eq!(bytes_from_json(&json!("aGk=")).unwrap(), b"hi");
+        assert_eq!(bytes_from_json(&json!([104, 105])).unwrap(), b"hi");
+        assert!(bytes_from_json(&json!([104, 300])).is_err());
+        assert!(bytes_from_json(&json!({"data": "%%%"})).is_err());
+        assert!(bytes_from_json(&json!({})).is_err());
+        assert!(bytes_from_json(&json!(null)).is_err());
     }
 
     #[test]
