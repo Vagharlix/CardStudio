@@ -4,8 +4,23 @@
 	var tauri = window.__TAURI__ && window.__TAURI__.core;
 	window.isApp = !!tauri;
 
+	// Android has no binary IPC channel: Tauri would turn the bytes into a JSON
+	// array of numbers (huge, slow). Send them as base64 text there instead.
+	var isAndroid = /Android/i.test(navigator.userAgent);
+
 	function blobFromHref(href) {
 		return fetch(href).then(function (r) { return r.blob(); });
+	}
+	function blobToBase64(blob) {
+		return new Promise(function (resolve, reject) {
+			var reader = new FileReader();
+			reader.onload = function () {
+				var url = String(reader.result);
+				resolve(url.slice(url.indexOf(',') + 1));
+			};
+			reader.onerror = function () { reject(reader.error); };
+			reader.readAsDataURL(blob);
+		});
 	}
 
 	// Save a Blob as a file. In the app: native "Save as" dialog on desktop,
@@ -13,8 +28,8 @@
 	window.saveBlob = async function (name, blob) {
 		if (tauri) {
 			try {
-				var bytes = new Uint8Array(await blob.arrayBuffer());
-				var savedTo = await tauri.invoke('save_file', bytes, { headers: { 'x-file-name': encodeURIComponent(name) } });
+				var body = isAndroid ? { data: await blobToBase64(blob) } : new Uint8Array(await blob.arrayBuffer());
+				var savedTo = await tauri.invoke('save_file', body, { headers: { 'x-file-name': encodeURIComponent(name) } });
 				if (savedTo) notify('Saved to ' + savedTo, 5);
 				return savedTo;
 			} catch (e) {
@@ -44,6 +59,15 @@
 		}
 		return nativeClick.call(this);
 	};
+
+	// Installed version in the footer (to check that an update went through).
+	var tauriApp = window.__TAURI__ && window.__TAURI__.app;
+	if (tauriApp && tauriApp.getVersion) {
+		tauriApp.getVersion().then(function (version) {
+			var footer = document.querySelector('.footer p');
+			if (footer && version) footer.appendChild(document.createTextNode(' Version ' + version + '.'));
+		}).catch(function () {});
+	}
 
 	// Links meant for a browser tab open in the system browser inside the app.
 	document.addEventListener('click', function (e) {
