@@ -26,7 +26,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/assets/hero.jpg" width="900" alt="The Card Studio editor on desktop: a finished card next to the frame picker and the list of the card's layers">
+  <img src="docs/assets/hero.jpg" width="900" alt="The Card Studio editor on desktop: a finished card next to the editing tabs and the frame picker">
 </p>
 
 ## Install in 30 seconds
@@ -45,7 +45,7 @@ To update, install the new version over the old one: your cards stay where they 
 ### Hundreds of frames
 
 <p align="center">
-  <img src="docs/assets/frames.gif" width="300" alt="The same card shown with six different frame styles, one after the other">
+  <img src="docs/assets/frames.gif" width="300" alt="The same card shown with seven different frame styles, one after the other">
 </p>
 
 382 frame packs, sorted into groups and searchable. Stack frames as layers, reorder them, change their opacity and position, and use masks to apply a frame to only part of the card. You can also add your own frame images.
