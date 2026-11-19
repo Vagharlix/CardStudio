@@ -2,7 +2,7 @@
 // Not used inside the desktop/Android apps, which already ship every file.
 // Strategy: cache-first for files of this site; anything fetched once
 // (frame packs, images, fonts) stays available offline afterwards.
-const CACHE = 'card-studio-v8';
+const CACHE = 'card-studio-v9';
 const CORE = [
   '/', '/index.html', '/manifest.webmanifest',
   '/css/app.css', '/css/ui-fonts.css', '/css/card-fonts.css',

@@ -1,6 +1,6 @@
 [package]
 name = "card-studio"
-version = "1.4.0"
+version = "1.4.1"
 description = "Offline custom card creator"
 edition = "2021"
 publish = false
