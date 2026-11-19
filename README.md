@@ -1,47 +1,174 @@
-# Card Studio
+<p align="center">
+  <img src="src-tauri/icons/128x128@2x.png" width="128" alt="Card Studio logo">
+</p>
 
-Éditeur de cartes personnalisées **100 % hors ligne** pour PC (Windows, macOS, toutes les distributions Linux) et Android. Il reprend l'éditeur « Creator » de mtgcardbuilder.com : même moteur de rendu, mêmes onglets, mêmes options.
+<h1 align="center">Card Studio</h1>
 
-Usage personnel uniquement. Non affilié à Wizards of the Coast, ni sponsorisé ou approuvé par eux.
+<p align="center">
+  <b>Design custom Magic cards on your computer or phone, even without internet.</b><br>
+  Hundreds of frames, full control over text and art, a gallery saved as real files, and print-ready sheets. No account needed.
+</p>
 
-## Installer
+<p align="center">
+  <a href="https://github.com/Vagharlix/MTGCardBuilder/releases/latest"><img alt="Latest version" src="https://img.shields.io/github/v/release/Vagharlix/MTGCardBuilder?label=version&color=8189f5"></a>
+  <a href="https://github.com/Vagharlix/MTGCardBuilder/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/Vagharlix/MTGCardBuilder/total?label=downloads&color=8189f5"></a>
+  <a href="#install-in-30-seconds"><img alt="Windows, macOS, Linux, Android" src="https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20%C2%B7%20Linux%20%C2%B7%20Android-222637"></a>
+  <a href="#works-offline"><img alt="100% offline" src="https://img.shields.io/badge/100%25-offline-2ea44f"></a>
+  <a href="https://github.com/Vagharlix/MTGCardBuilder/actions/workflows/build.yml"><img alt="Build" src="https://img.shields.io/github/actions/workflow/status/Vagharlix/MTGCardBuilder/build.yml?label=build"></a>
+</p>
 
-Télécharge le fichier de ton système dans la dernière **[Release](https://github.com/Vagharlix/MTGCardBuilder/releases/latest)**, section « Assets ».
+<p align="center">
+  <a href="#install-in-30-seconds">Install</a> ·
+  <a href="#features">Features</a> ·
+  <a href="#make-your-first-card">First card</a> ·
+  <a href="#faq">FAQ</a> ·
+  <a href="https://github.com/Vagharlix/MTGCardBuilder/issues">Report a bug</a>
+</p>
 
-| Système | Fichier | Remarque |
-|---|---|---|
-| Windows | `Card.Studio_x.y.z_x64-setup.exe` ou `.msi` | Si SmartScreen s'affiche : « Informations complémentaires → Exécuter quand même ». |
-| macOS (Apple Silicon) | `Card.Studio_x.y.z_aarch64.dmg` | L'app n'est pas signée : la première fois, clic droit → Ouvrir. Si macOS refuse encore : `xattr -cr "/Applications/Card Studio.app"`. |
-| Linux (toutes distributions) | `Card.Studio_x.y.z_amd64.AppImage` | `chmod +x Card.Studio_*.AppImage` puis double-clic. |
-| Debian / Ubuntu / Mint | `.deb` | `sudo apt install ./Card.Studio_*.deb` |
-| Fedora / openSUSE | `.rpm` | `sudo dnf install ./Card.Studio-*.rpm` |
-| Android (arm64) | `Card-Studio-main-arm64.apk` | Autorise l'installation d'applis inconnues pour ton navigateur ou ton gestionnaire de fichiers. |
+<p align="center">
+  <img src="docs/assets/hero.jpg" width="900" alt="The Card Studio editor on desktop: a finished card next to the editing tabs and the frame picker">
+</p>
 
-Pas de version pour Mac Intel, iPhone ni iPad.
+## Install in 30 seconds
 
-**Mise à jour** : installe la nouvelle version par-dessus l'ancienne.
+| System | Download |
+| --- | --- |
+| **Android** | [**Card-Studio-main-arm64.apk**](https://github.com/Vagharlix/MTGCardBuilder/releases/latest/download/Card-Studio-main-arm64.apk), then open it (allow installing unknown apps if your phone asks) |
+| **Windows** | `Card.Studio_x.y.z_x64-setup.exe` from the [latest release](https://github.com/Vagharlix/MTGCardBuilder/releases/latest) |
+| **macOS** (Apple Silicon) | `Card.Studio_x.y.z_aarch64.dmg` from the [latest release](https://github.com/Vagharlix/MTGCardBuilder/releases/latest) |
+| **Linux** | `.AppImage` (any distribution), `.deb` or `.rpm` from the [latest release](https://github.com/Vagharlix/MTGCardBuilder/releases/latest) |
 
-**Ta galerie** est enregistrée en vrais fichiers : une carte = un fichier `.cardconjurer` + son image `.jpg`. Tu peux toujours rouvrir une carte (Edit) pour la modifier, puis l'enregistrer sous le même nom.
-- **PC** : dans **Documents/Card Studio**.
-- **Android** : dans le stockage de l'app, avec une copie automatique dans **Documents/Card Studio** (qui reste même si l'app est désinstallée).
-- **Changer d'appareil ou réinstaller** : copie le dossier *Card Studio* sur le nouvel appareil, puis choisis-le dans **Gallery → Change folder** (ou importe ses fichiers avec *Import File*).
-- Tu peux aussi choisir n'importe quel autre dossier avec *Change folder* : les cartes déjà enregistrées y sont copiées.
+To update, install the new version over the old one: your cards stay where they are.
 
-Les images exportées sur Android vont dans **Téléchargements/Card Studio**.
+## Features
 
-## Fonctionnalités
+### Hundreds of frames
 
-- **Frame** : les mêmes groupes et packs de cadres que mtgcardbuilder.com, près de 380 packs (Regular, Tokens, Sagas et Saga Creatures, Planeswalkers, Transform, Modal DFC, Stations, Rooms, Omens, Prepare, Showcase dont Neon Ink, Pixel, Draconic, Paranormal, Japan Showcase…, Universes Beyond, Promos, Textless, cadres Custom dont StoneCutter et les 1/8th, anciens cadres…), avec leurs onglets spéciaux (Station, Saga, Class, Planeswalker…), recherche, *Load Frame Version*, *Rotate Frame*, *Auto load*, import de cadres perso, masques, ajout pleine carte / moitié droite / moitié gauche / centre, calques (glisser pour réordonner, clic pour opacité, position, teinte, masques). Les cadres **violets** et autres cadres « custom » de mtgcardbuilder.com sont inclus dans les 101 packs où le site les propose, en fin de liste comme sur le site (« Purple », « Purple PT », « Purple Crown »…).
-- **Text** : toutes les zones de texte, codes de mise en forme et de mana (dont `{purple}`), barre de symboles rapide, gras / italique, position, taille de zone et taille de police au curseur, ajout d'un surnom, d'un F/E ou d'une date.
-- **Art** : import (fichier, glisser-déposer, URL), déplacement à la souris ou au doigt, pincer pour zoomer, Maj + glisser pour l'échelle, Ctrl + glisser pour la rotation, *Auto Fit*, niveaux de gris.
-- **Set Symbol** : 291 extensions disponibles hors ligne, avec la rareté, ou ton propre symbole.
-- **Watermark** : galerie avec recherche et catégories (guildes, clans, écoles, familles…), 434 symboles d'extension, couleurs gauche/droite, opacité, position.
-- **Collector** : numéro, rareté, extension, langue, artiste, année, numéro de série, étoile ou point, valeurs par défaut.
-- **Import/Preset** : presets à partir de ta galerie (par catégorie), import d'une vraie carte depuis Scryfall (nécessite Internet), sauvegarde, chargement, export et import `.cardconjurer`.
-- **Save and Update Gallery**, **Download image** (PNG 2010×2814 ou JPEG), **Create Card Back**.
-- **Galerie** en fichiers, dans le dossier de ton choix : une carte = un fichier `.cardconjurer` (importable dans l'app sur un autre appareil) et son image `.jpg`. *Import File* accepte plusieurs fichiers à la fois.
-- **Print PDF** : planche A4 ou Letter, cartes à 63×88 mm, traits de coupe, fond perdu.
-- **Sur la carte** : choisis ce que le glissement déplace (illustration, texte, symbole, filigrane). Toucher un texte le sélectionne, glisser le déplace, pincer (ou Maj + glisser) change sa taille.
-- **Curseurs** à côté de chaque position, taille, opacité et échelle (illustration, textes, symbole, filigrane, numéro de série, calques).
-- **Mise en page adaptative** : sur un écran large (ordinateur, tablette, téléphone pliable déplié, téléphone à l'horizontale), les réglages sont à côté de la carte. Sur un téléphone en portrait, ils passent dessous et la carte reste épinglée en haut (3 tailles d'aperçu), avec les onglets en bande et une barre d'actions en bas.
-- Sauvegarde automatique de la carte en cours, thème sombre ou clair.
+<p align="center">
+  <img src="docs/assets/frames.gif" width="300" alt="The same card shown with seven different frame styles, one after the other">
+</p>
+
+382 frame packs, sorted into groups and searchable. Stack frames as layers, reorder them, change their opacity and position, and use masks to apply a frame to only part of the card. You can also add your own frame images.
+
+Around the frame: 291 set symbols in each rarity, a searchable watermark library, 85 card fonts, and mana and formatting codes for the rules text.
+
+### Edit right on the card
+
+<p align="center">
+  <img src="docs/assets/drag.gif" width="300" alt="A finger drags a card's illustration to reframe it">
+</p>
+
+Drag the art, any text box, the set symbol or the watermark with your mouse or finger. Pinch to resize. Every position and size also has a slider for fine adjustments.
+
+### Made for phones too
+
+<p align="center">
+  <img src="docs/assets/phone.jpg" width="620" alt="Two phone screens: the editor with the card pinned at the top and the text settings below, and the gallery">
+</p>
+
+On a phone, the card stays pinned at the top while you scroll through the settings. On a wide screen (tablet, unfolded foldable, computer), the settings sit next to the card.
+
+### Your gallery, your files
+
+<p align="center">
+  <img src="docs/assets/gallery.jpg" width="900" alt="The gallery with four saved cards, search, categories and the line saying the cards are saved as files in Documents/Card Studio">
+</p>
+
+Every saved card is a real file in **Documents/Card Studio**: a `.cardconjurer` file (the card itself, editable at any time) and a `.jpg` image.
+
+- **Reopen and edit** any card from the gallery, then save it under the same name.
+- **Move to another device**: copy the folder, then pick it with *Change folder*. All your cards come back.
+- **Nothing gets lost**: on Android, every card is also copied to Documents, which stays even if you uninstall the app.
+- **Sort and find**: categories, search, presets made from your own cards, single-file export and import.
+
+### Print your cards
+
+<p align="center">
+  <img src="docs/assets/print.jpg" width="420" alt="An A4 sheet of nine real-size cards with cut marks">
+</p>
+
+Pick cards and how many copies of each: Card Studio builds an A4 or Letter PDF with cards at **63×88 mm**, cut marks and optional bleed. Single cards export as 2010×2814 px images (800 DPI at real size).
+
+### Works offline
+
+Everything ships inside the app: frames, fonts, symbols. No account, no ads, nothing sent anywhere. Only two optional features use the internet: importing a real card from Scryfall and loading a set symbol from an online source.
+
+### Everything else
+
+- Card backs: start the back of the card you are working on in one click.
+- Collector info: number, rarity, set, language, artist, year, serial number.
+- Rotate the card for sideways layouts.
+- Light and dark themes.
+- The card you are working on is saved automatically.
+
+## Make your first card
+
+1. **Frame**: pick a group and a pack, click a frame, then *Add Frame to Card*.
+2. **Text**: pick a text box (Title, Mana Cost, Type, Rules Text…) and type. Codes like `{w}` `{u}` `{b}` `{r}` `{g}` `{t}` insert symbols, `{flavor}` starts the flavor text.
+3. **Art**: import your illustration, then drag it on the card.
+4. **Save and Update Gallery** to keep it, **Download** to get the image.
+
+The **Tutorial** tab in the app explains every option.
+
+## FAQ
+
+<details>
+<summary><b>Windows says "Windows protected your PC"</b></summary>
+
+The app is not signed with a paid certificate. Click *More info*, then *Run anyway*.
+</details>
+
+<details>
+<summary><b>macOS will not open the app</b></summary>
+
+The first time, right-click the app and choose *Open*. If macOS still refuses:
+
+```bash
+xattr -cr "/Applications/Card Studio.app"
+```
+</details>
+
+<details>
+<summary><b>How do I run the Linux AppImage?</b></summary>
+
+Make it executable, then double-click it:
+
+```bash
+chmod +x Card.Studio_*.AppImage
+```
+
+On Debian or Ubuntu you can install the `.deb` instead (`sudo apt install ./Card.Studio_*.deb`), on Fedora or openSUSE the `.rpm` (`sudo dnf install ./Card.Studio-*.rpm`).
+</details>
+
+<details>
+<summary><b>Where are my cards, and how do I move them to another device?</b></summary>
+
+In **Documents/Card Studio** (on Android: inside the app, with a copy in Documents/Card Studio). The *Gallery* tab shows the exact location. Copy that folder to the other device and pick it with *Change folder*, or import its files with *Import File*. *Export All* also creates a single backup file.
+</details>
+
+<details>
+<summary><b>What about iPhone, iPad or Intel Macs?</b></summary>
+
+Not available for now.
+</details>
+
+## Report a bug or suggest an idea
+
+Open an [issue](https://github.com/Vagharlix/MTGCardBuilder/issues) with a screenshot and your version (shown at the bottom of the app).
+
+## Built with AI
+
+Card Studio was created with the help of AI.
+
+I reviewed every plan and set the direction for how the program works. A friend of mine is its main user: he finds bugs regularly, and I fix them.
+
+The assets are AI-generated. If you are an artist and want to contribute to open source, feel free to make a real logo or illustrations for the example cards shown above.
+
+## Credits
+
+- Inspired by **[mtgcardbuilder.com](https://mtgcardbuilder.com)**.
+- Built with **[Tauri](https://tauri.app)**.
+
+---
+
+<sub>For personal use only. Card Studio is not affiliated with, sponsored or endorsed by Wizards of the Coast. Magic: The Gathering is a trademark of Wizards of the Coast LLC.</sub>
