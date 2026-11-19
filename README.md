@@ -158,9 +158,9 @@ Open an [issue](https://github.com/Vagharlix/MTGCardBuilder/issues) with a scree
 
 ## Built with AI
 
-Card Studio was created with the help of AI.
+Card Studio was created with the help of AI (Opus 5.5 Extra).
 
-I reviewed every plan and set the direction for how the program works. A friend of mine is its main user: he finds bugs regularly, and I fix them.
+I reviewed every plan and set the direction for how the program works.
 
 The assets are AI-generated. If you are an artist and want to contribute to open source, feel free to make a real logo or illustrations for the example cards shown above.
 
