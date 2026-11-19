@@ -33,6 +33,12 @@ pub struct Location {
     /// the default location is used instead.
     #[serde(default)]
     pub lost: bool,
+    /// Folder that receives a copy of every card (Android app storage only).
+    #[serde(default)]
+    pub backup: Option<String>,
+    /// Why the last copy to `backup` failed, if it did.
+    #[serde(default)]
+    pub backup_error: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -222,7 +228,59 @@ fn default_location<R: Runtime>(app: &AppHandle<R>, lost: bool) -> Result<Locati
     };
     #[cfg(not(target_os = "android"))]
     let label = default_dir(app)?.display().to_string();
-    Ok(Location { token: DEFAULT_TOKEN.into(), label, custom: false, lost })
+    let backup = backup_dir_for(DEFAULT_TOKEN).map(|_| BACKUP_LABEL.to_string());
+    let backup_error = backup.as_ref().and_then(|_| BACKUP_ERROR.lock().ok().and_then(|e| e.clone()));
+    Ok(Location { token: DEFAULT_TOKEN.into(), label, custom: false, lost, backup, backup_error })
+}
+
+// ---------------------------------------------------------------------------
+// Backup copy (Android app storage)
+// ---------------------------------------------------------------------------
+
+/// While cards are kept in the Android app storage (the default), each card
+/// file is also written to Documents/Card Studio: a folder the user can see
+/// and copy, which stays when the app is uninstalled. Choosing it with
+/// "Change folder" (on this or another phone) brings the cards back.
+#[allow(dead_code)]
+const BACKUP_LABEL: &str = "Documents/Card Studio";
+
+fn backup_dir_for(token: &str) -> Option<PathBuf> {
+    #[cfg(target_os = "android")]
+    if token == DEFAULT_TOKEN {
+        return Some(PathBuf::from("/storage/emulated/0/Documents/Card Studio"));
+    }
+    let _ = token;
+    None
+}
+
+static BACKUP_ERROR: std::sync::Mutex<Option<String>> = std::sync::Mutex::new(None);
+
+fn note_backup(result: Result<(), String>) {
+    if let Ok(mut slot) = BACKUP_ERROR.lock() {
+        *slot = result.err();
+    }
+}
+
+fn is_library_file(name: &str) -> bool {
+    let lower = name.to_lowercase();
+    lower.ends_with(".cardconjurer") || lower.ends_with(".jpg")
+}
+
+/// Copies to `backup` the card files of `primary` it does not have yet (or
+/// has with another size). Never deletes anything there.
+fn sync_backup(primary: &Path, backup: &Path) -> Result<u32, String> {
+    let there: std::collections::HashMap<String, u64> =
+        dir_list(backup).unwrap_or_default().into_iter().map(|f| (f.name, f.size)).collect();
+    let mut copied = 0;
+    for file in dir_list(primary)? {
+        if !is_library_file(&file.name) || there.get(&file.name) == Some(&file.size) {
+            continue;
+        }
+        let bytes = dir_read(primary, &file.name)?;
+        dir_write(backup, &file.name, &bytes)?;
+        copied += 1;
+    }
+    Ok(copied)
 }
 
 #[cfg(target_os = "android")]
@@ -308,12 +366,12 @@ async fn current_location<R: Runtime>(app: &AppHandle<R>) -> Result<Location, St
         return default_location(app, false);
     };
     match place(app, &token) {
-        Ok(Place::Dir(path)) => Ok(Location { label: path.display().to_string(), token, custom: true, lost: false }),
+        Ok(Place::Dir(path)) => Ok(Location { label: path.display().to_string(), token, custom: true, lost: false, backup: None, backup_error: None }),
         #[cfg(target_os = "android")]
         Ok(Place::Tree(tree)) => {
             let described: android::Described = android::call(app, "describe", android::Args::tree(&tree)).await?;
             if described.ok {
-                Ok(Location { label: described.name.unwrap_or_else(|| "Chosen folder".into()), token, custom: true, lost: false })
+                Ok(Location { label: described.name.unwrap_or_else(|| "Chosen folder".into()), token, custom: true, lost: false, backup: None, backup_error: None })
             } else {
                 default_location(app, true)
             }
@@ -322,11 +380,12 @@ async fn current_location<R: Runtime>(app: &AppHandle<R>) -> Result<Location, St
     }
 }
 
-async fn resolve_at<R: Runtime>(app: &AppHandle<R>, at: Option<String>) -> Result<Place, String> {
-    match at {
-        Some(token) => place(app, &token),
-        None => place(app, &current_location(app).await?.token),
-    }
+async fn resolve_at<R: Runtime>(app: &AppHandle<R>, at: Option<String>) -> Result<(Place, String), String> {
+    let token = match at {
+        Some(token) => token,
+        None => current_location(app).await?.token,
+    };
+    Ok((place(app, &token)?, token))
 }
 
 // ---------------------------------------------------------------------------
@@ -351,6 +410,8 @@ pub async fn library_pick<R: Runtime>(app: AppHandle<R>) -> Result<Option<Locati
             token: tree,
             custom: true,
             lost: false,
+            backup: None,
+            backup_error: None,
         }))
     }
     #[cfg(not(target_os = "android"))]
@@ -370,7 +431,7 @@ pub async fn library_pick<R: Runtime>(app: AppHandle<R>) -> Result<Option<Locati
         // fail now rather than on the first save
         dir_write(&path, "card-studio-write-test.tmp", b"ok")?;
         dir_delete(&path, "card-studio-write-test.tmp")?;
-        Ok(Some(Location { label: path.display().to_string(), token: path.display().to_string(), custom: true, lost: false }))
+        Ok(Some(Location { label: path.display().to_string(), token: path.display().to_string(), custom: true, lost: false, backup: None, backup_error: None }))
     }
 }
 
@@ -392,7 +453,7 @@ pub async fn library_use<R: Runtime>(app: AppHandle<R>, token: String) -> Result
 
 #[tauri::command]
 pub async fn library_list<R: Runtime>(app: AppHandle<R>, at: Option<String>) -> Result<Vec<FileEntry>, String> {
-    match resolve_at(&app, at).await? {
+    match resolve_at(&app, at).await?.0 {
         Place::Dir(dir) => dir_list(&dir),
         #[cfg(target_os = "android")]
         Place::Tree(tree) => {
@@ -413,7 +474,7 @@ pub async fn library_read<R: Runtime>(
     use base64::Engine;
     let as_base64 = base64.unwrap_or(false);
     check_name(&name)?;
-    match resolve_at(&app, at).await? {
+    match resolve_at(&app, at).await?.0 {
         Place::Dir(dir) => {
             let bytes = dir_read(&dir, &name)?;
             if as_base64 {
@@ -442,7 +503,8 @@ pub async fn library_write<R: Runtime>(
 ) -> Result<(), String> {
     use base64::Engine;
     check_name(&name)?;
-    match resolve_at(&app, at).await? {
+    let (target, token) = resolve_at(&app, at).await?;
+    match target {
         Place::Dir(dir) => {
             let bytes = match (&text, &base64) {
                 (Some(t), _) => t.as_bytes().to_vec(),
@@ -451,7 +513,11 @@ pub async fn library_write<R: Runtime>(
                     .map_err(|e| format!("invalid file data: {e}"))?,
                 (None, None) => return Err("nothing to write".into()),
             };
-            dir_write(&dir, &name, &bytes)
+            dir_write(&dir, &name, &bytes)?;
+            if let Some(backup) = backup_dir_for(&token) {
+                note_backup(dir_write(&backup, &name, &bytes));
+            }
+            Ok(())
         }
         #[cfg(target_os = "android")]
         Place::Tree(tree) => {
@@ -465,14 +531,34 @@ pub async fn library_write<R: Runtime>(
 #[tauri::command]
 pub async fn library_delete<R: Runtime>(app: AppHandle<R>, at: Option<String>, name: String) -> Result<(), String> {
     check_name(&name)?;
-    match resolve_at(&app, at).await? {
-        Place::Dir(dir) => dir_delete(&dir, &name),
+    let (target, token) = resolve_at(&app, at).await?;
+    match target {
+        Place::Dir(dir) => {
+            dir_delete(&dir, &name)?;
+            if let Some(backup) = backup_dir_for(&token) {
+                note_backup(dir_delete(&backup, &name));
+            }
+            Ok(())
+        }
         #[cfg(target_os = "android")]
         Place::Tree(tree) => {
             let _: serde_json::Value = android::call(&app, "delete", android::Args::file(&tree, &name)).await?;
             Ok(())
         }
     }
+}
+
+/// Brings the backup copy up to date (cards saved before it existed, or
+/// while it could not be written). Returns how many files were copied.
+#[tauri::command]
+pub async fn library_backup_sync<R: Runtime>(app: AppHandle<R>) -> Result<u32, String> {
+    let token = current_location(&app).await?.token;
+    let (Some(backup), Place::Dir(primary)) = (backup_dir_for(&token), place(&app, &token)?) else {
+        return Ok(0);
+    };
+    let result = sync_backup(&primary, &backup);
+    note_backup(result.as_ref().map(|_| ()).map_err(|e| e.clone()));
+    result
 }
 
 /// Small app settings kept in the private data folder.
@@ -538,6 +624,25 @@ mod tests {
         assert_eq!(dir_list(&dir).unwrap().len(), 1);
         assert!(dir_read(&dir, "../etc/passwd").is_err());
         fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn backup_copies_missing_and_changed_cards_only() {
+        let primary = temp_dir("primary");
+        let backup = temp_dir("backup");
+        dir_write(&primary, "A.cardconjurer", b"{\"key\":\"A\"}").unwrap();
+        dir_write(&primary, "A.jpg", b"jpg").unwrap();
+        dir_write(&primary, "notes.txt", b"not a card").unwrap();
+        assert_eq!(sync_backup(&primary, &backup).unwrap(), 2); // backup folder created
+        assert_eq!(sync_backup(&primary, &backup).unwrap(), 0); // up to date
+        dir_write(&primary, "A.cardconjurer", b"{\"key\":\"A\",\"v\":2}").unwrap();
+        dir_write(&backup, "Old.cardconjurer", b"{}").unwrap(); // only in the backup: kept
+        assert_eq!(sync_backup(&primary, &backup).unwrap(), 1);
+        assert_eq!(dir_read(&backup, "A.cardconjurer").unwrap(), b"{\"key\":\"A\",\"v\":2}");
+        let names: Vec<String> = dir_list(&backup).unwrap().into_iter().map(|f| f.name).collect();
+        assert_eq!(names, vec!["A.cardconjurer", "A.jpg", "Old.cardconjurer"]);
+        fs::remove_dir_all(&primary).unwrap();
+        fs::remove_dir_all(&backup).unwrap();
     }
 
     #[test]

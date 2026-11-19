@@ -950,11 +950,32 @@
 		var location = await CardStore.location().catch(function () { return null; });
 		$('#library-bar').classList.toggle('hidden', !location);
 		if (!location) return;
-		$('#library-location').textContent = location.label;
+		var where = $('#library-where');
+		where.innerHTML = '';
+		var b = document.createElement('b');
+		b.textContent = location.label;
+		where.append(location.backup ? 'Saved in the ' : 'Saved as files in ', b);
+		if (location.backup) {
+			var copy = document.createElement('b');
+			copy.textContent = location.backup;
+			where.append(', with an automatic copy in ', copy);
+		}
+		$('#library-hint').textContent = location.backup
+			? 'To get your cards on another device or after reinstalling the app, copy the ' + location.backup + ' folder and choose it with Change folder.'
+			: 'To get your cards on another device, copy this folder there and choose it with Change folder (or use Import File).';
+		var problems = [];
+		if (location.lost) problems.push('The folder you chose before cannot be opened any more (moved, deleted, or access removed). Cards are saved in the app storage until you choose a folder again.');
+		if (location.backupError) problems.push('The copy in ' + location.backup + ' could not be updated (' + location.backupError + '). Choose a folder with Change folder to keep a copy of your cards outside the app.');
 		var warning = $('#library-warning');
-		warning.classList.toggle('hidden', !location.lost);
-		warning.textContent = location.lost ? 'The folder you chose before cannot be opened any more (moved, deleted, or access removed). Cards are saved in the app storage until you choose a folder again.' : '';
+		warning.classList.toggle('hidden', !problems.length);
+		warning.textContent = problems.join(' ');
+		$('#gallery-empty').textContent = location.backup
+			? 'No saved cards yet. If you had cards before reinstalling the app, choose the folder ' + location.backup + ' with Change folder to get them back.'
+			: 'No saved cards yet. Create one in the editor, then click "Save and Update Gallery".';
 	}
+	document.addEventListener('library-changed', function () {
+		if (!$('#view-gallery').classList.contains('hidden')) showLibraryLocation();
+	});
 	window.changeLibraryFolder = async function () {
 		var result;
 		try {

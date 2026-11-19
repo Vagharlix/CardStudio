@@ -21,7 +21,11 @@ Pas de version pour Mac Intel, iPhone ni iPad.
 
 **Mise à jour** : installe la nouvelle version par-dessus l'ancienne.
 
-**Ta galerie** est enregistrée en vrais fichiers. Par défaut : **Documents/Card Studio** sur PC, le stockage de l'app sur Android. Pour la garder même en désinstallant l'app, ou la retrouver sur un autre appareil, choisis un dossier dans **Gallery → Change folder** (les cartes déjà enregistrées y sont copiées). Sur le nouvel appareil, copie ce dossier puis choisis-le de la même façon.
+**Ta galerie** est enregistrée en vrais fichiers : une carte = un fichier `.cardconjurer` + son image `.jpg`. Tu peux toujours rouvrir une carte (Edit) pour la modifier, puis l'enregistrer sous le même nom.
+- **PC** : dans **Documents/Card Studio**.
+- **Android** : dans le stockage de l'app, avec une copie automatique dans **Documents/Card Studio** (qui reste même si l'app est désinstallée).
+- **Changer d'appareil ou réinstaller** : copie le dossier *Card Studio* sur le nouvel appareil, puis choisis-le dans **Gallery → Change folder** (ou importe ses fichiers avec *Import File*).
+- Tu peux aussi choisir n'importe quel autre dossier avec *Change folder* : les cartes déjà enregistrées y sont copiées.
 
 Les images exportées sur Android vont dans **Téléchargements/Card Studio**.
 

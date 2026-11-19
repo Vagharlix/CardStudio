@@ -108,7 +108,7 @@
 		var old = cached && cached.token === at ? (cached.files || {}) : {};
 		var jpgs = {};
 		files.forEach(function (f) { jpgs[f.name.toLowerCase()] = f.name; });
-		var cards = {}, index = {};
+		var cards = {}, index = {}, unreadable = [];
 		for (var i = 0; i < files.length; i++) {
 			var f = files[i];
 			if (!isCardFile(f.name)) continue;
@@ -116,7 +116,7 @@
 			var same = meta && meta.size === f.size && (meta.modified == null || meta.modified === f.modified);
 			if (!same) {
 				var obj;
-				try { obj = JSON.parse(await invoke('library_read', { at: at, name: f.name })); } catch (e) { continue; }
+				try { obj = JSON.parse(await invoke('library_read', { at: at, name: f.name })); } catch (e) { unreadable.push(f.name); continue; }
 				if (Array.isArray(obj) && obj.length === 1) obj = obj[0];
 				if (!obj || Array.isArray(obj) || !obj.data) continue; // not a single card (e.g. an "Export All" file)
 				meta = { key: String(obj.key || baseOf(f.name)), category: obj.category || '', updated: obj.updated || f.modified, thumb: obj.thumb || null };
@@ -130,8 +130,34 @@
 		lib.cards = cards;
 		lib.index = index;
 		saveIndex();
+		if (unreadable.length) notify('Could not read ' + unreadable.join(', ') + ' in ' + lib.location.label + ' (damaged file?).', 10);
 		await migrateIndexedDb();
 		document.dispatchEvent(new CustomEvent('library-changed', { detail: lib.location }));
+		if (lib.location.backup) syncBackup();
+	}
+	// After a save or a delete: tell the user right away if the automatic
+	// copy (Android app storage) could not be written.
+	function refreshBackupStatus() {
+		if (!lib.location || !lib.location.backup) return;
+		var hadError = !!lib.location.backupError;
+		invoke('library_info').then(function (location) {
+			if (location.token !== lib.location.token) return;
+			lib.location = location;
+			if (location.backupError && !hadError) notify('Your card is saved, but its copy in ' + location.backup + ' could not be written: ' + location.backupError, 10);
+			document.dispatchEvent(new CustomEvent('library-changed', { detail: location }));
+		}).catch(function () {});
+	}
+	// Android app storage: bring the copy in Documents/Card Studio up to date.
+	function syncBackup() {
+		invoke('library_backup_sync').then(function () {
+			return invoke('library_info');
+		}).then(function (location) {
+			if (location.token === lib.location.token) lib.location = location;
+		}).catch(function (e) {
+			lib.location.backupError = String(e);
+		}).then(function () {
+			document.dispatchEvent(new CustomEvent('library-changed', { detail: lib.location }));
+		});
 	}
 	function ready() {
 		if (!lib.ready) {
@@ -161,6 +187,7 @@
 		lib.cards[entry.key] = next;
 		lib.index[file] = next;
 		saveIndex();
+		if (at === lib.location.token) refreshBackupStatus();
 	}
 	async function deleteCard(key) {
 		var meta = lib.cards[key];
@@ -171,6 +198,7 @@
 		delete lib.cards[key];
 		delete lib.index[meta.file];
 		saveIndex();
+		refreshBackupStatus();
 	}
 
 	// Cards saved by earlier versions in IndexedDB move into the folder once.

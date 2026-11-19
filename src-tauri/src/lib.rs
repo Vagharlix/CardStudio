@@ -161,6 +161,7 @@ pub fn run() {
             library::library_read,
             library::library_write,
             library::library_delete,
+            library::library_backup_sync,
             library::state_get,
             library::state_set
         ])
