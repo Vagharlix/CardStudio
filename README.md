@@ -158,7 +158,11 @@ Open an [issue](https://github.com/Vagharlix/MTGCardBuilder/issues) with a scree
 
 ## Built with AI
 
-Card Studio was developed with the help of AI (Claude Code): the code, the tests and the illustrations of the demo cards shown above, which were made for this README.
+Card Studio was created with the help of AI.
+
+I reviewed every plan and set the direction for how the program works. A friend of mine is its main user: he finds bugs regularly, and I fix them.
+
+The assets are AI-generated. If you are an artist and want to contribute to open source, feel free to make a real logo or illustrations for the example cards shown above.
 
 ## Credits
 
