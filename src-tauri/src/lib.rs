@@ -1,6 +1,9 @@
 //! Card Studio native shell: serves the web app (embedded assets) and adds
-//! the two things a webview cannot do on its own: saving files where the user
-//! wants them, and opening links in the system browser.
+//! what a webview cannot do on its own: saving files where the user wants
+//! them, keeping the card library in real files (see library.rs), and
+//! opening links in the system browser.
+
+mod library;
 
 use std::path::{Path, PathBuf};
 
@@ -147,7 +150,21 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![save_file, open_url])
+        .plugin(library::plugin())
+        .invoke_handler(tauri::generate_handler![
+            save_file,
+            open_url,
+            library::library_info,
+            library::library_pick,
+            library::library_use,
+            library::library_list,
+            library::library_read,
+            library::library_write,
+            library::library_delete,
+            library::library_backup_sync,
+            library::state_get,
+            library::state_set
+        ])
         .run(tauri::generate_context!())
         .expect("error while running Card Studio");
 }

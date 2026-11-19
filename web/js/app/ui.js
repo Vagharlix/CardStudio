@@ -946,7 +946,51 @@
 		return answer.name;
 	};
 	var galleryUrls = [];
+	async function showLibraryLocation() {
+		var location = await CardStore.location().catch(function () { return null; });
+		$('#library-bar').classList.toggle('hidden', !location);
+		if (!location) return;
+		var where = $('#library-where');
+		where.innerHTML = '';
+		var b = document.createElement('b');
+		b.textContent = location.label;
+		where.append(location.backup ? 'Saved in the ' : 'Saved as files in ', b);
+		if (location.backup) {
+			var copy = document.createElement('b');
+			copy.textContent = location.backup;
+			where.append(', with an automatic copy in ', copy);
+		}
+		$('#library-hint').textContent = location.backup
+			? 'To get your cards on another device or after reinstalling the app, copy the ' + location.backup + ' folder and choose it with Change folder.'
+			: 'To get your cards on another device, copy this folder there and choose it with Change folder (or use Import File).';
+		var problems = [];
+		if (location.lost) problems.push('The folder you chose before cannot be opened any more (moved, deleted, or access removed). Cards are saved in the app storage until you choose a folder again.');
+		if (location.backupError) problems.push('The copy in ' + location.backup + ' could not be updated (' + location.backupError + '). Choose a folder with Change folder to keep a copy of your cards outside the app.');
+		var warning = $('#library-warning');
+		warning.classList.toggle('hidden', !problems.length);
+		warning.textContent = problems.join(' ');
+		$('#gallery-empty').textContent = location.backup
+			? 'No saved cards yet. If you had cards before reinstalling the app, choose the folder ' + location.backup + ' with Change folder to get them back.'
+			: 'No saved cards yet. Create one in the editor, then click "Save and Update Gallery".';
+	}
+	document.addEventListener('library-changed', function () {
+		if (!$('#view-gallery').classList.contains('hidden')) showLibraryLocation();
+	});
+	window.changeLibraryFolder = async function () {
+		var result;
+		try {
+			result = await CardStore.changeFolder();
+		} catch (e) {
+			notify('Could not use this folder: ' + e, 10);
+			return;
+		}
+		if (!result) return;
+		notify('Cards are now saved in ' + result.location.label + '.' + (result.copied ? ' ' + result.copied + ' card' + (result.copied === 1 ? '' : 's') + ' copied there.' : '') + ' ' + result.total + ' card' + (result.total === 1 ? '' : 's') + ' in the gallery.', 8);
+		await loadAvailableCards();
+		renderGallery();
+	};
 	window.renderGallery = async function () {
+		showLibraryLocation();
 		var list = await CardStore.all();
 		fillCategorySelect($('#gallery-category'), await getCategories(), 'All categories');
 		var q = ($('#gallery-search').value || '').trim().toLowerCase();
@@ -974,8 +1018,8 @@
 			row.innerHTML = '<button class="input btn-red">Edit</button><button class="input btn-red">Image</button><button class="input btn-red">Delete</button>';
 			var btns = row.querySelectorAll('button');
 			btns[0].onclick = function () { openFromGallery(e.key); };
-			btns[1].disabled = !e.image;
-			btns[1].onclick = function () { saveBlob(e.key + '.jpg', e.image); };
+			btns[1].disabled = !(e.image || e.hasImage);
+			btns[1].onclick = async function () { saveBlob(e.key + '.jpg', e.image || await CardStore.getImage(e.key)); };
 			btns[2].onclick = async function () {
 				if (!(await dialogConfirm('Delete card', 'Delete "' + e.key + '" from your gallery?', 'Delete'))) return;
 				await CardStore.remove(e.key);
@@ -1019,7 +1063,7 @@
 	document.addEventListener('cards-changed', function () { refreshPresetList(); });
 
 	window.renderPrintList = async function () {
-		var list = (await CardStore.all()).filter(function (e) { return e.image; });
+		var list = (await CardStore.all()).filter(function (e) { return e.image || e.hasImage; });
 		galleryUrls.forEach(URL.revokeObjectURL);
 		galleryUrls = [];
 		var box = $('#print-list');
