@@ -946,7 +946,30 @@
 		return answer.name;
 	};
 	var galleryUrls = [];
+	async function showLibraryLocation() {
+		var location = await CardStore.location().catch(function () { return null; });
+		$('#library-bar').classList.toggle('hidden', !location);
+		if (!location) return;
+		$('#library-location').textContent = location.label;
+		var warning = $('#library-warning');
+		warning.classList.toggle('hidden', !location.lost);
+		warning.textContent = location.lost ? 'The folder you chose before cannot be opened any more (moved, deleted, or access removed). Cards are saved in the app storage until you choose a folder again.' : '';
+	}
+	window.changeLibraryFolder = async function () {
+		var result;
+		try {
+			result = await CardStore.changeFolder();
+		} catch (e) {
+			notify('Could not use this folder: ' + e, 10);
+			return;
+		}
+		if (!result) return;
+		notify('Cards are now saved in ' + result.location.label + '.' + (result.copied ? ' ' + result.copied + ' card' + (result.copied === 1 ? '' : 's') + ' copied there.' : '') + ' ' + result.total + ' card' + (result.total === 1 ? '' : 's') + ' in the gallery.', 8);
+		await loadAvailableCards();
+		renderGallery();
+	};
 	window.renderGallery = async function () {
+		showLibraryLocation();
 		var list = await CardStore.all();
 		fillCategorySelect($('#gallery-category'), await getCategories(), 'All categories');
 		var q = ($('#gallery-search').value || '').trim().toLowerCase();
@@ -974,8 +997,8 @@
 			row.innerHTML = '<button class="input btn-red">Edit</button><button class="input btn-red">Image</button><button class="input btn-red">Delete</button>';
 			var btns = row.querySelectorAll('button');
 			btns[0].onclick = function () { openFromGallery(e.key); };
-			btns[1].disabled = !e.image;
-			btns[1].onclick = function () { saveBlob(e.key + '.jpg', e.image); };
+			btns[1].disabled = !(e.image || e.hasImage);
+			btns[1].onclick = async function () { saveBlob(e.key + '.jpg', e.image || await CardStore.getImage(e.key)); };
 			btns[2].onclick = async function () {
 				if (!(await dialogConfirm('Delete card', 'Delete "' + e.key + '" from your gallery?', 'Delete'))) return;
 				await CardStore.remove(e.key);
@@ -1019,7 +1042,7 @@
 	document.addEventListener('cards-changed', function () { refreshPresetList(); });
 
 	window.renderPrintList = async function () {
-		var list = (await CardStore.all()).filter(function (e) { return e.image; });
+		var list = (await CardStore.all()).filter(function (e) { return e.image || e.hasImage; });
 		galleryUrls.forEach(URL.revokeObjectURL);
 		galleryUrls = [];
 		var box = $('#print-list');

@@ -19,7 +19,9 @@ Télécharge le fichier de ton système dans la dernière **[Release](https://gi
 
 Pas de version pour Mac Intel, iPhone ni iPad.
 
-**Mise à jour** : installe la nouvelle version par-dessus l'ancienne. Sur Android, ne désinstalle pas l'app avant, sinon tu perds ta galerie.
+**Mise à jour** : installe la nouvelle version par-dessus l'ancienne.
+
+**Ta galerie** est enregistrée en vrais fichiers. Par défaut : **Documents/Card Studio** sur PC, le stockage de l'app sur Android. Pour la garder même en désinstallant l'app, ou la retrouver sur un autre appareil, choisis un dossier dans **Gallery → Change folder** (les cartes déjà enregistrées y sont copiées). Sur le nouvel appareil, copie ce dossier puis choisis-le de la même façon.
 
 Les images exportées sur Android vont dans **Téléchargements/Card Studio**.
 
@@ -33,7 +35,8 @@ Les images exportées sur Android vont dans **Téléchargements/Card Studio**.
 - **Collector** : numéro, rareté, extension, langue, artiste, année, numéro de série, étoile ou point, valeurs par défaut.
 - **Import/Preset** : presets à partir de ta galerie (par catégorie), import d'une vraie carte depuis Scryfall (nécessite Internet), sauvegarde, chargement, export et import `.cardconjurer`.
 - **Save and Update Gallery**, **Download image** (PNG 2010×2814 ou JPEG), **Create Card Back**.
-- **Galerie** locale (sans limite de 5 Mo) et **Print PDF** : planche A4 ou Letter, cartes à 63×88 mm, traits de coupe, fond perdu.
+- **Galerie** en fichiers, dans le dossier de ton choix : une carte = un fichier `.cardconjurer` (importable dans l'app sur un autre appareil) et son image `.jpg`. *Import File* accepte plusieurs fichiers à la fois.
+- **Print PDF** : planche A4 ou Letter, cartes à 63×88 mm, traits de coupe, fond perdu.
 - **Sur la carte** : choisis ce que le glissement déplace (illustration, texte, symbole, filigrane). Toucher un texte le sélectionne, glisser le déplace, pincer (ou Maj + glisser) change sa taille.
 - **Curseurs** à côté de chaque position, taille, opacité et échelle (illustration, textes, symbole, filigrane, numéro de série, calques).
 - **Mise en page adaptative** : sur un écran large (ordinateur, tablette, téléphone pliable déplié, téléphone à l'horizontale), les réglages sont à côté de la carte. Sur un téléphone en portrait, ils passent dessous et la carte reste épinglée en haut (3 tailles d'aperçu), avec les onglets en bande et une barre d'actions en bas.

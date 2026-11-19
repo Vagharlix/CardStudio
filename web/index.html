@@ -768,8 +768,13 @@
 			<input id="gallery-search" type="search" class="input" placeholder="Search your cards..." oninput="renderGallery()">
 			<select id="gallery-category" class="input" onchange="renderGallery()"><option value="">All categories</option></select>
 			<button class="input btn-red" onclick="downloadSavedCards()">Export All</button>
-			<label class="input btn-red file-btn">Import File<input type="file" accept=".cardconjurer,.txt,.json" oninput="uploadSavedCards(event);"></label>
+			<label class="input btn-red file-btn">Import File<input type="file" accept=".cardconjurer,.txt,.json" multiple oninput="uploadSavedCards(event);"></label>
 		</div>
+		<div id="library-bar" class="library-bar hidden">
+			<p>Saved as files in <b id="library-location"></b><br><span class="hint">Copy this folder to another device and choose it there to get your cards back.</span></p>
+			<button class="input btn-red" onclick="changeLibraryFolder()">Change folder</button>
+		</div>
+		<p id="library-warning" class="library-warning hidden"></p>
 		<div id="gallery-grid" class="gallery-grid"></div>
 		<p id="gallery-empty" class="gallery-empty hidden">No saved cards yet. Create one in the editor, then click "Save and Update Gallery".</p>
 	</main>

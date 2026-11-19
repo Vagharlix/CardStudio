@@ -134,9 +134,10 @@
 		for (var i = 0; i < inputs.length; i++) {
 			var n = Math.min(99, parseInt(inputs[i].value, 10) || 0);
 			if (!n) continue;
-			var entry = await CardStore.get(inputs[i].dataset.key);
-			if (!entry || !entry.image) continue;
-			for (var k = 0; k < n; k++) items.push({ key: entry.key, blob: entry.image });
+			var key = inputs[i].dataset.key;
+			var image = await CardStore.getImage(key);
+			if (!image) continue;
+			for (var k = 0; k < n; k++) items.push({ key: key, blob: image });
 		}
 		if (!items.length) { notify('Set the number of copies for at least one card.', 4); return; }
 		var pdf = await buildPdf(items, {

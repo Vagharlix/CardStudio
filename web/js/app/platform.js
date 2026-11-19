@@ -22,6 +22,7 @@
 			reader.readAsDataURL(blob);
 		});
 	}
+	window.blobToBase64 = blobToBase64;
 
 	// Save a Blob as a file. In the app: native "Save as" dialog on desktop,
 	// Downloads folder on Android. In a browser: regular download.
