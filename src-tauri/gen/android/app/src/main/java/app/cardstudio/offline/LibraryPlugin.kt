@@ -139,7 +139,7 @@ class LibraryPlugin(private val activity: Activity) : Plugin(activity) {
       it.write(bytes)
       it.flush()
       // make sure the card is on disk before reporting success
-      try { (it as? FileOutputStream)?.fd?.sync() } catch (_: Exception) { }
+      try { (it as? FileOutputStream)?.fd?.sync() } catch (ignored: Exception) { }
     }
   }
 
@@ -180,7 +180,7 @@ class LibraryPlugin(private val activity: Activity) : Plugin(activity) {
     background(invoke) { args ->
       val tree = treeOf(args)
       val name = if (hasAccess(tree)) {
-        try { displayName(rootDocument(tree)) } catch (_: Exception) { null }
+        try { displayName(rootDocument(tree)) } catch (ignored: Exception) { null }
       } else null
       val out = JSObject()
       out.put("ok", name != null)
@@ -198,7 +198,7 @@ class LibraryPlugin(private val activity: Activity) : Plugin(activity) {
         if (permission.uri.toString() != keep) {
           try {
             activity.contentResolver.releasePersistableUriPermission(permission.uri, readWrite)
-          } catch (_: Exception) { }
+          } catch (ignored: Exception) { }
         }
       }
       JSObject()
@@ -260,15 +260,15 @@ class LibraryPlugin(private val activity: Activity) : Plugin(activity) {
         var swapped = false
         val part = try {
           DocumentsContract.createDocument(resolver, parent, mimeOf(name), "$name.part")
-        } catch (_: Exception) { null }
+        } catch (ignored: Exception) { null }
         if (part != null) {
           try {
             writeBytes(part, bytes)
             DocumentsContract.deleteDocument(resolver, existing)
             swapped = DocumentsContract.renameDocument(resolver, part, name) != null
-          } catch (_: Exception) { }
+          } catch (ignored: Exception) { }
           if (!swapped) {
-            try { DocumentsContract.deleteDocument(resolver, part) } catch (_: Exception) { }
+            try { DocumentsContract.deleteDocument(resolver, part) } catch (ignored: Exception) { }
           }
         }
         if (!swapped) {
@@ -297,7 +297,7 @@ class LibraryPlugin(private val activity: Activity) : Plugin(activity) {
       if (doc != null) {
         try {
           DocumentsContract.deleteDocument(activity.contentResolver, doc)
-        } catch (_: FileNotFoundException) { }
+        } catch (ignored: FileNotFoundException) { }
         ids.remove(cacheKey(tree, name))
       }
       JSObject()
