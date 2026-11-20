@@ -10,11 +10,11 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Vagharlix/MTGCardBuilder/releases/latest"><img alt="Latest version" src="https://img.shields.io/github/v/release/Vagharlix/MTGCardBuilder?label=version&color=8189f5"></a>
-  <a href="https://github.com/Vagharlix/MTGCardBuilder/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/Vagharlix/MTGCardBuilder/total?label=downloads&color=8189f5"></a>
+  <a href="https://github.com/Vagharlix/CardStudio/releases/latest"><img alt="Latest version" src="https://img.shields.io/github/v/release/Vagharlix/CardStudio?label=version&color=8189f5"></a>
+  <a href="https://github.com/Vagharlix/CardStudio/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/Vagharlix/CardStudio/total?label=downloads&color=8189f5"></a>
   <a href="#install-in-30-seconds"><img alt="Windows, macOS, Linux, Android" src="https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20%C2%B7%20Linux%20%C2%B7%20Android-222637"></a>
   <a href="#works-offline"><img alt="100% offline" src="https://img.shields.io/badge/100%25-offline-2ea44f"></a>
-  <a href="https://github.com/Vagharlix/MTGCardBuilder/actions/workflows/build.yml"><img alt="Build" src="https://img.shields.io/github/actions/workflow/status/Vagharlix/MTGCardBuilder/build.yml?label=build"></a>
+  <a href="https://github.com/Vagharlix/CardStudio/actions/workflows/build.yml"><img alt="Build" src="https://img.shields.io/github/actions/workflow/status/Vagharlix/CardStudio/build.yml?label=build"></a>
 </p>
 
 <p align="center">
@@ -22,7 +22,7 @@
   <a href="#features">Features</a> ·
   <a href="#make-your-first-card">First card</a> ·
   <a href="#faq">FAQ</a> ·
-  <a href="https://github.com/Vagharlix/MTGCardBuilder/issues">Report a bug</a>
+  <a href="https://github.com/Vagharlix/CardStudio/issues">Report a bug</a>
 </p>
 
 <p align="center">
@@ -33,10 +33,10 @@
 
 | System | Download |
 | --- | --- |
-| **Android** | [**Card-Studio-main-arm64.apk**](https://github.com/Vagharlix/MTGCardBuilder/releases/latest/download/Card-Studio-main-arm64.apk), then open it (allow installing unknown apps if your phone asks) |
-| **Windows** | `Card.Studio_x.y.z_x64-setup.exe` from the [latest release](https://github.com/Vagharlix/MTGCardBuilder/releases/latest) |
-| **macOS** (Apple Silicon) | `Card.Studio_x.y.z_aarch64.dmg` from the [latest release](https://github.com/Vagharlix/MTGCardBuilder/releases/latest) |
-| **Linux** | `.AppImage` (any distribution), `.deb` or `.rpm` from the [latest release](https://github.com/Vagharlix/MTGCardBuilder/releases/latest) |
+| **Android** | [**Card-Studio-main-arm64.apk**](https://github.com/Vagharlix/CardStudio/releases/latest/download/Card-Studio-main-arm64.apk), then open it (allow installing unknown apps if your phone asks) |
+| **Windows** | `Card.Studio_x.y.z_x64-setup.exe` from the [latest release](https://github.com/Vagharlix/CardStudio/releases/latest) |
+| **macOS** (Apple Silicon) | `Card.Studio_x.y.z_aarch64.dmg` from the [latest release](https://github.com/Vagharlix/CardStudio/releases/latest) |
+| **Linux** | `.AppImage` (any distribution), `.deb` or `.rpm` from the [latest release](https://github.com/Vagharlix/CardStudio/releases/latest) |
 
 To update, install the new version over the old one: your cards stay where they are.
 
@@ -154,7 +154,7 @@ Not available for now.
 
 ## Report a bug or suggest an idea
 
-Open an [issue](https://github.com/Vagharlix/MTGCardBuilder/issues) with a screenshot and your version (shown at the bottom of the app).
+Open an [issue](https://github.com/Vagharlix/CardStudio/issues) with a screenshot and your version (shown at the bottom of the app).
 
 ## Built with AI
 
